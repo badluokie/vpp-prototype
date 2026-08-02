@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>虚拟电厂（VPP）资源聚合与运营管理平台</title>
+<title>虚拟电厂（VPP）资源聚合与运营管理平台 — 一阶段MVP</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
@@ -482,12 +482,6 @@ tr:hover td { background: var(--primary-light); }
     <div class="topbar">
       <div class="topbar-title" id="pageTitle">首页</div>
       <div class="breadcrumb" id="breadcrumb"></div>
-      <div class="phase-switcher" id="phaseSwitcher">
-        <div class="phase-item active" data-phase="1" onclick="switchPhase(1)">一阶段<span class="phase-badge">MVP</span></div>
-        <div class="phase-item" data-phase="2" onclick="switchPhase(2)">二阶段</div>
-        <div class="phase-item" data-phase="3" onclick="switchPhase(3)">三阶段</div>
-      </div>
-      <div class="phase-tag" id="phaseTag">当前：<span>负荷型VPP + 辅助服务调峰</span></div>
       <div class="role-switcher" id="roleSwitcher">
         <div class="role-item" data-role="operator" onclick="switchRole('operator')">运营</div>
         <div class="role-item" data-role="dispatcher" onclick="switchRole('dispatcher')">调度</div>
@@ -510,16 +504,18 @@ tr:hover td { background: var(--primary-light); }
 // ==================== prototype.js ====================
 // ==================== 导航配置 ====================
 const HOME_ITEM = { id: 'dashboard', name: '首页', icon: '📊' };
-var currentPhase = 1;
 
-// ==================== 一阶段 NAV：负荷型VPP + 辅助服务调峰（MVP） ====================
+// ==================== 一阶段 NAV：混合型VPP + 辅助服务调峰/需求响应（MVP） ====================
 var NAV_PHASE1 = [
   { title: '资源管理', icon: '🏭', roles: ['operator','dispatcher','trader','admin'], items: [
     { id: 'resource-register', name: '资源接入注册', roles: ['operator','trader','admin'] },
     { id: 'resource-enterprise', name: '资源档案管理', roles: ['operator','trader','admin'] },
+    { id: 'resource-iot', name: 'IoT平台管理', roles: ['operator','admin'] },
     { id: 'resource-audit', name: '接入审核', roles: ['operator','admin'] },
     { id: 'resource-monitor', name: '实时监控', roles: ['operator','dispatcher','admin'] },
-    { id: 'resource-contract', name: '合同管理', roles: ['operator','admin'] }
+    { id: 'resource-contract', name: '合同管理', roles: ['operator','admin'] },
+    { id: 'storage-management', name: '储能系统管理', roles: ['operator','admin'] },
+    { id: 'pv-management', name: '分布式光伏管理', roles: ['operator','admin'] }
   ]},
   { title: '基线管理', icon: '📐', roles: ['dispatcher','finance','admin'], items: [
     { id: 'baseline-modeling', name: '基线建模', roles: ['dispatcher','admin'] },
@@ -541,6 +537,7 @@ var NAV_PHASE1 = [
   { title: '结算收益', icon: '💰', roles: ['finance','admin'], items: [
     { id: 'settlement-manage', name: '结算管理', roles: ['finance','admin'] },
     { id: 'settlement-revenue', name: '收益分析', roles: ['finance','trader','admin'] },
+    { id: 'settlement-sharing', name: '收益分成看板', roles: ['finance','operator','admin'] },
     { id: 'settlement-bill', name: '账单管理', roles: ['finance','admin'] }
   ]},
   { title: '运营分析', icon: '📉', roles: ['operator','dispatcher','trader','finance','admin'], items: [
@@ -555,133 +552,8 @@ var NAV_PHASE1 = [
   ]}
 ];
 
-// ==================== 二阶段 NAV：现货市场 + 储能 + 分布式光伏 ====================
-var NAV_PHASE2 = [
-  { title: '资源管理', icon: '🏭', roles: ['operator','dispatcher','trader','admin'], items: [
-    { id: 'resource-register', name: '资源接入注册', roles: ['operator','trader','admin'] },
-    { id: 'resource-enterprise', name: '资源档案管理', roles: ['operator','trader','admin'] },
-    { id: 'resource-iot', name: 'IoT平台管理', roles: ['operator','admin'] },
-    { id: 'resource-audit', name: '接入审核', roles: ['operator','admin'] },
-    { id: 'resource-monitor', name: '实时监控', roles: ['operator','dispatcher','admin'] },
-    { id: 'resource-contract', name: '合同管理', roles: ['operator','admin'] },
-    { id: 'storage-management', name: '储能系统管理', roles: ['operator','admin'] },
-    { id: 'pv-management', name: '分布式光伏管理', roles: ['operator','admin'] }
-  ]},
-  { title: '基线管理', icon: '📐', roles: ['dispatcher','finance','admin'], items: [
-    { id: 'baseline-modeling', name: '基线建模', roles: ['dispatcher','admin'] },
-    { id: 'settlement-baseline', name: '基线审核', roles: ['dispatcher','finance','admin'] }
-  ]},
-  { title: '市场交易', icon: '📈', roles: ['trader','admin'], items: [
-    { id: 'market-overview', name: '市场总览', roles: ['trader','admin'] },
-    { id: 'market-declare', name: '辅助服务申报', roles: ['trader','admin'] },
-    { id: 'market-spot', name: '现货市场', roles: ['trader','admin'] },
-    { id: 'market-clearing', name: '出清管理', roles: ['trader','admin'] },
-    { id: 'market-event', name: '事件管理', roles: ['trader','dispatcher','admin'] }
-  ]},
-  { title: '调控执行', icon: '🎛️', roles: ['dispatcher','admin'], items: [
-    { id: 'control-potential', name: '可调潜力评估', roles: ['dispatcher','admin'] },
-    { id: 'control-strategy', name: '调度策略', roles: ['dispatcher','admin'] },
-    { id: 'control-workbench', name: '指令工作台', roles: ['dispatcher','admin'] },
-    { id: 'control-demand-response', name: '需求侧响应', roles: ['dispatcher','admin'] },
-    { id: 'control-assessment', name: '考核管理', roles: ['dispatcher','admin'] }
-  ]},
-  { title: '结算收益', icon: '💰', roles: ['finance','admin'], items: [
-    { id: 'settlement-manage', name: '结算管理', roles: ['finance','admin'] },
-    { id: 'settlement-revenue', name: '收益分析', roles: ['finance','trader','admin'] },
-    { id: 'settlement-bill', name: '账单管理', roles: ['finance','admin'] }
-  ]},
-  { title: '运营分析', icon: '📉', roles: ['operator','dispatcher','trader','finance','admin'], items: [
-    { id: 'analysis-review', name: '运营复盘', roles: ['operator','admin'] },
-    { id: 'analysis-kpi', name: 'KPI 分析', roles: ['operator','dispatcher','trader','finance','admin'] },
-    { id: 'analysis-report', name: '功率分析', roles: ['operator','dispatcher','trader','admin'] },
-    { id: 'analysis-forecast', name: '负荷预测', roles: ['operator','dispatcher','admin'] },
-    { id: 'analysis-cockpit', name: '运营驾驶舱', roles: ['operator','dispatcher','trader','admin'] }
-  ]},
-  { title: '系统设置', icon: '⚙️', roles: ['admin'], items: [
-    { id: 'system-qualification', name: '市场准入管理', roles: ['admin'] },
-    { id: 'system-user', name: '用户与权限', roles: ['admin'] },
-    { id: 'system-config', name: '系统配置', roles: ['admin'] }
-  ]}
-];
-
-// ==================== 三阶段 NAV：多VPP协同 + 碳交易 + 全场景 ====================
-var NAV_PHASE3 = [
-  { title: '资源管理', icon: '🏭', roles: ['operator','dispatcher','trader','admin'], items: [
-    { id: 'resource-register', name: '资源接入注册', roles: ['operator','trader','admin'] },
-    { id: 'resource-enterprise', name: '资源档案管理', roles: ['operator','trader','admin'] },
-    { id: 'resource-iot', name: 'IoT平台管理', roles: ['operator','admin'] },
-    { id: 'resource-audit', name: '接入审核', roles: ['operator','admin'] },
-    { id: 'resource-monitor', name: '实时监控', roles: ['operator','dispatcher','admin'] },
-    { id: 'resource-contract', name: '合同管理', roles: ['operator','admin'] },
-    { id: 'storage-management', name: '储能系统管理', roles: ['operator','admin'] },
-    { id: 'pv-management', name: '分布式光伏管理', roles: ['operator','admin'] },
-    { id: 'vpp-coordination', name: '多VPP协同', roles: ['admin'] }
-  ]},
-  { title: '基线管理', icon: '📐', roles: ['dispatcher','finance','admin'], items: [
-    { id: 'baseline-modeling', name: '基线建模', roles: ['dispatcher','admin'] },
-    { id: 'settlement-baseline', name: '基线审核', roles: ['dispatcher','finance','admin'] }
-  ]},
-  { title: '市场交易', icon: '📈', roles: ['trader','admin'], items: [
-    { id: 'market-overview', name: '市场总览', roles: ['trader','admin'] },
-    { id: 'market-declare', name: '辅助服务申报', roles: ['trader','admin'] },
-    { id: 'market-spot', name: '现货市场', roles: ['trader','admin'] },
-    { id: 'market-clearing', name: '出清管理', roles: ['trader','admin'] },
-    { id: 'market-event', name: '事件管理', roles: ['trader','dispatcher','admin'] },
-    { id: 'market-carbon', name: '碳排放交易', roles: ['trader','admin'] },
-    { id: 'market-finance', name: '电力金融市场', roles: ['trader','admin'] }
-  ]},
-  { title: '调控执行', icon: '🎛️', roles: ['dispatcher','admin'], items: [
-    { id: 'control-potential', name: '可调潜力评估', roles: ['dispatcher','admin'] },
-    { id: 'control-strategy', name: '调度策略', roles: ['dispatcher','admin'] },
-    { id: 'control-workbench', name: '指令工作台', roles: ['dispatcher','admin'] },
-    { id: 'control-demand-response', name: '需求侧响应', roles: ['dispatcher','admin'] },
-    { id: 'control-multi-vpp', name: '多VPP联合调度', roles: ['dispatcher','admin'] },
-    { id: 'control-assessment', name: '考核管理', roles: ['dispatcher','admin'] }
-  ]},
-  { title: '结算收益', icon: '💰', roles: ['finance','admin'], items: [
-    { id: 'settlement-manage', name: '结算管理', roles: ['finance','admin'] },
-    { id: 'settlement-revenue', name: '收益分析', roles: ['finance','trader','admin'] },
-    { id: 'settlement-bill', name: '账单管理', roles: ['finance','admin'] }
-  ]},
-  { title: '运营分析', icon: '📉', roles: ['operator','dispatcher','trader','finance','admin'], items: [
-    { id: 'analysis-review', name: '运营复盘', roles: ['operator','admin'] },
-    { id: 'analysis-kpi', name: 'KPI 分析', roles: ['operator','dispatcher','trader','finance','admin'] },
-    { id: 'analysis-report', name: '功率分析', roles: ['operator','dispatcher','trader','admin'] },
-    { id: 'analysis-forecast', name: '负荷预测', roles: ['operator','dispatcher','admin'] },
-    { id: 'analysis-ai', name: 'AI决策中心', roles: ['admin'] },
-    { id: 'analysis-cockpit', name: '运营驾驶舱', roles: ['operator','dispatcher','trader','admin'] }
-  ]},
-  { title: '生态平台', icon: '🌐', roles: ['admin'], items: [
-    { id: 'eco-open', name: '开放平台', roles: ['admin'] },
-    { id: 'eco-partner', name: '合作伙伴管理', roles: ['admin'] }
-  ]},
-  { title: '系统设置', icon: '⚙️', roles: ['admin'], items: [
-    { id: 'system-qualification', name: '市场准入管理', roles: ['admin'] },
-    { id: 'system-user', name: '用户与权限', roles: ['admin'] },
-    { id: 'system-config', name: '系统配置', roles: ['admin'] }
-  ]}
-];
 
 var NAV = NAV_PHASE1;
-var PHASE_TAGS = {
-  1: '负荷型VPP + 辅助服务调峰',
-  2: '现货市场 + 储能 + 分布式光伏',
-  3: '多VPP协同 + 碳交易 + 全场景'
-};
-
-function switchPhase(phase) {
-  currentPhase = phase;
-  if (phase === 1) NAV = NAV_PHASE1;
-  else if (phase === 2) NAV = NAV_PHASE2;
-  else if (phase === 3) NAV = NAV_PHASE3;
-  document.querySelectorAll('.phase-item').forEach(function(el) { el.classList.remove('active'); });
-  var active = document.querySelector('.phase-item[data-phase="' + phase + '"]');
-  if (active) active.classList.add('active');
-  var tagEl = document.querySelector('#phaseTag span');
-  if (tagEl) tagEl.textContent = PHASE_TAGS[phase];
-  renderNav();
-  navigate('dashboard', '首页', '首页');
-}
 
 // 详情子页面配置（不在导航栏显示，但可通过路由访问）
 const DETAIL_PAGES = [
@@ -1095,8 +967,8 @@ PAGES['dashboard'] = function() {
     html += '<div class="kpi-row" style="grid-template-columns:repeat(5,1fr);">' +
       '<div class="kpi-card blue" onclick="navigate(\'control-potential\',\'调控执行\',\'可调潜力评估\')">' +
         '<div class="kpi-label">可调容量</div>' +
-        '<div class="kpi-value">21.0<span class="kpi-unit">MW</span></div>' +
-        '<div class="kpi-trend up">↑ 储能 8MW / 工业 6MW</div>' +
+        '<div class="kpi-value">33.0<span class="kpi-unit">MW</span></div>' +
+        '<div class="kpi-trend up">↑ 储能 17MW / 充电站 15MW</div>' +
       '</div>' +
       '<div class="kpi-card green" onclick="navigate(\'resource-monitor\',\'资源管理\',\'实时监控\')">' +
         '<div class="kpi-label">资源在线率</div>' +
@@ -1110,13 +982,13 @@ PAGES['dashboard'] = function() {
       '</div>' +
       '<div class="kpi-card purple" onclick="navigate(\'control-assessment\',\'调控执行\',\'考核管理\')">' +
         '<div class="kpi-label">考核合格率</div>' +
-        '<div class="kpi-value">96.2<span class="kpi-unit">%</span></div>' +
-        '<div class="kpi-trend up">↑ 2.1% vs 上月</div>' +
+        '<div class="kpi-value">97.5<span class="kpi-unit">%</span></div>' +
+        '<div class="kpi-trend up">↑ 1.3% vs 上月</div>' +
       '</div>' +
       '<div class="kpi-card cyan" onclick="navigate(\'resource-iot\',\'资源管理\',\'IoT平台管理\')">' +
         '<div class="kpi-label">IoT平台连接</div>' +
-        '<div class="kpi-value">38<span class="kpi-unit">/42</span></div>' +
-        '<div class="kpi-trend up">↑ 同步率 90.5%</div>' +
+        '<div class="kpi-value">54<span class="kpi-unit">/55</span></div>' +
+        '<div class="kpi-trend up">↑ 同步率 98.2%</div>' +
       '</div>' +
     '</div>';
   } else if (role === 'trader') {
@@ -1133,8 +1005,8 @@ PAGES['dashboard'] = function() {
       '</div>' +
       '<div class="kpi-card orange" onclick="navigate(\'settlement-revenue\',\'结算收益\',\'收益分析\')">' +
         '<div class="kpi-label">本月收益</div>' +
-        '<div class="kpi-value">\u00a586.4<span class="kpi-unit">万</span></div>' +
-        '<div class="kpi-trend up">↑ 12.3% vs 上月</div>' +
+        '<div class="kpi-value">\u00a594.6<span class="kpi-unit">万</span></div>' +
+        '<div class="kpi-trend up">↑ 9.5% vs 上月</div>' +
       '</div>' +
       '<div class="kpi-card purple" onclick="navigate(\'market-event\',\'市场交易\',\'事件管理\')">' +
         '<div class="kpi-label">待出清事件</div>' +
@@ -1143,16 +1015,16 @@ PAGES['dashboard'] = function() {
       '</div>' +
       '<div class="kpi-card cyan" onclick="navigate(\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">' +
         '<div class="kpi-label">可用资源</div>' +
-        '<div class="kpi-value">42<span class="kpi-unit">个</span></div>' +
-        '<div class="kpi-trend up">↑ 3个本月新增</div>' +
+        '<div class="kpi-value">55<span class="kpi-unit">个</span></div>' +
+        '<div class="kpi-trend up">↑ 5个本月新增</div>' +
       '</div>' +
     '</div>';
   } else if (role === 'finance') {
     html += '<div class="kpi-row" style="grid-template-columns:repeat(5,1fr);">' +
       '<div class="kpi-card blue" onclick="navigate(\'settlement-revenue\',\'结算收益\',\'收益分析\')">' +
         '<div class="kpi-label">本月收益</div>' +
-        '<div class="kpi-value">\u00a586.4<span class="kpi-unit">万</span></div>' +
-        '<div class="kpi-trend up">↑ 12.3% vs 上月</div>' +
+        '<div class="kpi-value">\u00a594.6<span class="kpi-unit">万</span></div>' +
+        '<div class="kpi-trend up">↑ 9.5% vs 上月</div>' +
       '</div>' +
       '<div class="kpi-card orange" onclick="navigate(\'settlement-manage\',\'结算收益\',\'结算管理\')">' +
         '<div class="kpi-label">待结算金额</div>' +
@@ -1180,32 +1052,32 @@ PAGES['dashboard'] = function() {
     html += '<div class="kpi-row" style="grid-template-columns:repeat(5,1fr);">' +
       '<div class="kpi-card blue" onclick="navigate(\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">' +
         '<div class="kpi-label">接入资源总数</div>' +
-        '<div class="kpi-value">42<span class="kpi-unit">个</span></div>' +
-        '<div class="kpi-trend up">↑ 3个本月新增 | 可调容量 <b>21.0 MW</b></div>' +
-        '<div style="margin-top:8px;font-size:11px;color:#8c8c8c;">在线 40 / 离线 2 / 告警 3</div>' +
+        '<div class="kpi-value">55<span class="kpi-unit">个</span></div>' +
+        '<div class="kpi-trend up">↑ 5个本月新增 | 可调容量 <b>33.0 MW</b></div>' +
+        '<div style="margin-top:8px;font-size:11px;color:#8c8c8c;">在线 53 / 离线 2 / 告警 2</div>' +
       '</div>' +
       '<div class="kpi-card green" onclick="navigate(\'resource-monitor\',\'资源管理\',\'实时监控\')">' +
         '<div class="kpi-label">资源在线率</div>' +
-        '<div class="kpi-value">95.2<span class="kpi-unit">%</span></div>' +
+        '<div class="kpi-value">96.4<span class="kpi-unit">%</span></div>' +
         '<div class="kpi-trend up">↑ 1.2% vs 上周</div>' +
-        '<div style="margin-top:8px;font-size:11px;color:#8c8c8c;">响应中 <b>8</b> 个资源</div>' +
+        '<div style="margin-top:8px;font-size:11px;color:#8c8c8c;">响应中 <b>10</b> 个资源</div>' +
       '</div>' +
       '<div class="kpi-card orange" onclick="navigate(\'settlement-revenue\',\'结算收益\',\'收益分析\')">' +
         '<div class="kpi-label">本月收益</div>' +
-        '<div class="kpi-value">\u00a586.4<span class="kpi-unit">万</span></div>' +
-        '<div class="kpi-trend up">↑ 12.3% vs 上月 | 目标达成 <b>86%</b></div>' +
-        '<div style="margin-top:8px;font-size:11px;color:#8c8c8c;">容量补偿 \u00a532万 + 电量补偿 \u00a56.6万</div>' +
+        '<div class="kpi-value">\u00a594.6<span class="kpi-unit">万</span></div>' +
+        '<div class="kpi-trend up">↑ 9.5% vs 上月 | 目标达成 <b>95%</b></div>' +
+        '<div style="margin-top:8px;font-size:11px;color:#8c8c8c;">调峰 \u00a558.8万 + 调频 \u00a522.8万 + 备用 \u00a513.0万</div>' +
       '</div>' +
       '<div class="kpi-card purple" onclick="navigate(\'control-assessment\',\'调控执行\',\'考核管理\')">' +
         '<div class="kpi-label">考核合格率</div>' +
-        '<div class="kpi-value">96.2<span class="kpi-unit">%</span></div>' +
-        '<div class="kpi-trend up">↑ 2.1% vs 上月</div>' +
-        '<div style="margin-top:8px;font-size:11px;color:#8c8c8c;">本月累计扣罚 \u00a512,600</div>' +
+        '<div class="kpi-value">97.5<span class="kpi-unit">%</span></div>' +
+        '<div class="kpi-trend up">↑ 1.3% vs 上月</div>' +
+        '<div style="margin-top:8px;font-size:11px;color:#8c8c8c;">本月累计扣罚 \u00a58,500</div>' +
       '</div>' +
       '<div class="kpi-card cyan" onclick="navigate(\'resource-iot\',\'资源管理\',\'IoT平台管理\')">' +
         '<div class="kpi-label">IoT平台连接</div>' +
-        '<div class="kpi-value">38<span class="kpi-unit">/42</span></div>' +
-        '<div class="kpi-trend up">↑ 同步率 90.5%</div>' +
+        '<div class="kpi-value">54<span class="kpi-unit">/55</span></div>' +
+        '<div class="kpi-trend up">↑ 同步率 98.2%</div>' +
         '<div style="margin-top:8px;font-size:11px;color:#8c8c8c;">MQTT在线 | 数据通道健康</div>' +
       '</div>' +
     '</div>';
@@ -1253,11 +1125,11 @@ PAGES['dashboard'] = function() {
     '<div class="card">' +
       '<div class="card-title">资源类型分布<span class="more" onclick="navigate(\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">详情</span></div>' +
       '<div style="display:flex;flex-direction:column;gap:10px;">' +
-        '<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span><span style="display:inline-block;width:8px;height:8px;background:#722ed1;border-radius:2px;margin-right:6px;"></span>\u50a8\u80fd</span><span><b>12</b> (27%) | 8.0MW</span></div><div style="height:8px;background:#f0f0f0;border-radius:4px;"><div style="width:27%;height:100%;background:#722ed1;border-radius:4px;"></div></div></div>' +
-        '<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span><span style="display:inline-block;width:8px;height:8px;background:#1890ff;border-radius:2px;margin-right:6px;"></span>\u5145\u7535\u7ad9</span><span><b>9</b> (19%) | 3.2MW</span></div><div style="height:8px;background:#f0f0f0;border-radius:4px;"><div style="width:19%;height:100%;background:#1890ff;border-radius:4px;"></div></div></div>' +
-        '<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span><span style="display:inline-block;width:8px;height:8px;background:#faad14;border-radius:2px;margin-right:6px;"></span>\u697c\u5b87\u7a7a\u8c03</span><span><b>5</b> (10%) | 2.0MW</span></div><div style="height:8px;background:#f0f0f0;border-radius:4px;"><div style="width:10%;height:100%;background:#faad14;border-radius:4px;"></div></div></div>' +
-        '<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span><span style="display:inline-block;width:8px;height:8px;background:#52c41a;border-radius:2px;margin-right:6px;"></span>\u5149\u4f0f</span><span><b>8</b> (14%) | 1.8MWp</span></div><div style="height:8px;background:#f0f0f0;border-radius:4px;"><div style="width:14%;height:100%;background:#52c41a;border-radius:4px;"></div></div></div>' +
-        '<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span><span style="display:inline-block;width:8px;height:8px;background:#8c8c8c;border-radius:2px;margin-right:6px;"></span>\u5de5\u4e1a\u8d1f\u8377</span><span><b>8</b> (21%) | 6.0MW</span></div><div style="height:8px;background:#f0f0f0;border-radius:4px;"><div style="width:21%;height:100%;background:#8c8c8c;border-radius:4px;"></div></div></div>' +
+        '<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span><span style="display:inline-block;width:8px;height:8px;background:#722ed1;border-radius:2px;margin-right:6px;"></span>\u50a8\u80fd</span><span><b>18</b> (34%) | 17.0MW</span></div><div style="height:8px;background:#f0f0f0;border-radius:4px;"><div style="width:34%;height:100%;background:#722ed1;border-radius:4px;"></div></div></div>' +
+        '<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span><span style="display:inline-block;width:8px;height:8px;background:#1890ff;border-radius:2px;margin-right:6px;"></span>\u5145\u7535\u7ad9</span><span><b>12</b> (30%) | 15.0MW</span></div><div style="height:8px;background:#f0f0f0;border-radius:4px;"><div style="width:30%;height:100%;background:#1890ff;border-radius:4px;"></div></div></div>' +
+        '<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span><span style="display:inline-block;width:8px;height:8px;background:#52c41a;border-radius:2px;margin-right:6px;"></span>\u5149\u4f0f</span><span><b>12</b> (20%) | 10.0MWp</span></div><div style="height:8px;background:#f0f0f0;border-radius:4px;"><div style="width:20%;height:100%;background:#52c41a;border-radius:4px;"></div></div></div>' +
+        '<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span><span style="display:inline-block;width:8px;height:8px;background:#faad14;border-radius:2px;margin-right:6px;"></span>\u697c\u5b87\u7a7a\u8c03</span><span><b>10</b> (10%) | 5.0MW</span></div><div style="height:8px;background:#f0f0f0;border-radius:4px;"><div style="width:10%;height:100%;background:#faad14;border-radius:4px;"></div></div></div>' +
+        '<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span><span style="display:inline-block;width:8px;height:8px;background:#8c8c8c;border-radius:2px;margin-right:6px;"></span>\u5de5\u4e1a\u8d1f\u8377</span><span><b>3</b> (6%) | 3.0MW</span></div><div style="height:8px;background:#f0f0f0;border-radius:4px;"><div style="width:6%;height:100%;background:#8c8c8c;border-radius:4px;"></div></div></div>' +
       '</div>' +
     '</div>' +
     '<div class="card">' +
@@ -1274,7 +1146,7 @@ PAGES['dashboard'] = function() {
           '<div style="font-size:12px;color:#8c8c8c;margin-top:4px;">申报成功率</div>' +
         '</div>' +
         '<div style="background:#f6ffed;padding:14px 8px;border-radius:6px;text-align:center;">' +
-          '<div style="font-size:24px;font-weight:700;color:var(--success);">96.2%</div>' +
+          '<div style="font-size:24px;font-weight:700;color:var(--success);">97.5%</div>' +
           '<div style="font-size:12px;color:#8c8c8c;margin-top:4px;">考核合格率</div>' +
         '</div>' +
       '</div>' +
@@ -1301,7 +1173,7 @@ PAGES['dashboard'] = function() {
       '<div style="display:flex;gap:16px;font-size:12px;color:#8c8c8c;margin-top:6px;">' +
         '<span><span style="display:inline-block;width:10px;height:3px;background:#1890ff;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>日常收益</span>' +
         '<span><span style="display:inline-block;width:10px;height:3px;background:#52c41a;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>高峰日收益</span>' +
-        '<span style="margin-left:auto;">本月累计 <b style="color:var(--text-1);">\u00a586.4万</b> | 日均 <b style="color:var(--text-1);">\u00a52.88万</b></span>' +
+        '<span style="margin-left:auto;">本月累计 <b style="color:var(--text-1);">\u00a594.6万</b> | 日均 <b style="color:var(--text-1);">\u00a53.15万</b></span>' +
       '</div>' +
     '</div>' +
     '<div class="card">' +
@@ -1361,7 +1233,7 @@ PAGES['resource-iot'] = function() {
           '<span style="color:#8c8c8c;">接口：REST API / WebSocket</span>' +
         '</div>' +
         '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #ffe58f;font-size:12px;">' +
-          '<span style="color:#8c8c8c;">同步资源：</span><b>42个</b> | <span style="color:#8c8c8c;">同步率：</span><b style="color:var(--success);">90.5%</b>' +
+          '<span style="color:#8c8c8c;">同步资源：</span><b>55个</b> | <span style="color:#8c8c8c;">同步率：</span><b style="color:var(--success);">98.2%</b>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -1402,16 +1274,16 @@ PAGES['resource-iot'] = function() {
     '<table>' +
       '<thead><tr><th>IoT设备ID</th><th>设备名称</th><th>资源类型</th><th>通信协议</th><th>关联VPP资源</th><th>物模型</th><th>同步状态</th><th>最后同步</th><th>操作</th></tr></thead>' +
       '<tbody>' +
-        tr('DEV-001', '虹桥储能PCS', tag('purple','储能'), 'IEC 61850', '<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">虹桥储能电站</a>', tag('green','已同步'), tag('green','已同步'), '18:25:30', '<button class="btn-link" onclick="navigateToDetail(\'iot-device-detail\',\'IoT设备详情 - DEV-001\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">详情</button> <button class="btn-link" onclick="navigateToDetail(\'iot-sync-detail\',\'设备同步 - DEV-001\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">同步</button>') +
-        tr('DEV-002', '虹桥充电桩群A', tag('blue','充电站'), 'OCPP 2.0', '<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">虹桥充电站A</a>', tag('green','已同步'), tag('green','已同步'), '18:25:28', '<button class="btn-link" onclick="navigateToDetail(\'iot-device-detail\',\'IoT设备详情 - DEV-002\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">详情</button> <button class="btn-link" onclick="navigateToDetail(\'iot-sync-detail\',\'设备同步 - DEV-002\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">同步</button>') +
-        tr('DEV-003', '浦东储能PCS1', tag('purple','储能'), 'IEC 61850', '<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">浦东储能1号</a>', tag('green','已同步'), tag('green','已同步'), '18:25:25', '<button class="btn-link" onclick="navigateToDetail(\'iot-device-detail\',\'IoT设备详情 - DEV-003\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">详情</button> <button class="btn-link" onclick="navigateToDetail(\'iot-sync-detail\',\'设备同步 - DEV-003\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">同步</button>') +
-        tr('DEV-004', '虹桥空调控制器', tag('orange','楼宇空调'), 'BACnet', '<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">虹桥商务区空调</a>', tag('green','已同步'), tag('orange','待同步'), '17:50:00', '<button class="btn-link" onclick="navigateToDetail(\'iot-device-detail\',\'IoT设备详情 - DEV-004\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">详情</button> <button class="btn-link" onclick="navigateToDetail(\'iot-sync-detail\',\'设备同步 - DEV-004\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">同步</button>') +
-        tr('DEV-005', '嘉定充电桩群', tag('blue','充电站'), 'OCPP 2.0', '<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">嘉定充电站群</a>', tag('green','已同步'), tag('green','已同步'), '18:25:15', '<button class="btn-link" onclick="navigateToDetail(\'iot-device-detail\',\'IoT设备详情 - DEV-005\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">详情</button> <button class="btn-link" onclick="navigateToDetail(\'iot-sync-detail\',\'设备同步 - DEV-005\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">同步</button>') +
-        tr('DEV-006', '奉贤光伏逆变器', tag('green','光伏'), 'Modbus TCP', '<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">奉贤光伏电站</a>', tag('red','未配置'), tag('red','同步异常'), '06:00:00', '<button class="btn-link" onclick="navigateToDetail(\'iot-device-detail\',\'IoT设备详情 - DEV-006\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">详情</button> <button class="btn-link" onclick="navigateToDetail(\'iot-sync-detail\',\'设备同步 - DEV-006\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">同步</button>') +
-        tr('DEV-007', '青浦工业PLC', tag('gray','工业负荷'), 'Modbus TCP', '<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">青浦工业负荷</a>', tag('green','已同步'), tag('green','已同步'), '18:20:00', '<button class="btn-link" onclick="navigateToDetail(\'iot-device-detail\',\'IoT设备详情 - DEV-007\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">详情</button> <button class="btn-link" onclick="navigateToDetail(\'iot-sync-detail\',\'设备同步 - DEV-007\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">同步</button>') +
+        tr('DEV-001', '长沙储能PCS', tag('purple','储能'), 'IEC 61850', '<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">长沙储能1号站</a>', tag('green','已同步'), tag('green','已同步'), '18:25:30', '<button class="btn-link" onclick="navigateToDetail(\'iot-device-detail\',\'IoT设备详情 - DEV-001\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">详情</button> <button class="btn-link" onclick="navigateToDetail(\'iot-sync-detail\',\'设备同步 - DEV-001\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">同步</button>') +
+        tr('DEV-002', '湘潭充电桩群A', tag('blue','充电站'), 'OCPP 2.0', '<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">湘潭充电站A</a>', tag('green','已同步'), tag('green','已同步'), '18:25:28', '<button class="btn-link" onclick="navigateToDetail(\'iot-device-detail\',\'IoT设备详情 - DEV-002\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">详情</button> <button class="btn-link" onclick="navigateToDetail(\'iot-sync-detail\',\'设备同步 - DEV-002\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">同步</button>') +
+        tr('DEV-003', '湘潭储能PCS2', tag('purple','储能'), 'IEC 61850', '<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">湘潭储能2号站</a>', tag('green','已同步'), tag('green','已同步'), '18:25:25', '<button class="btn-link" onclick="navigateToDetail(\'iot-device-detail\',\'IoT设备详情 - DEV-003\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">详情</button> <button class="btn-link" onclick="navigateToDetail(\'iot-sync-detail\',\'设备同步 - DEV-003\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">同步</button>') +
+        tr('DEV-004', '长沙空调控制器', tag('orange','楼宇空调'), 'BACnet', '<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">长沙楼宇空调群</a>', tag('green','已同步'), tag('orange','待同步'), '17:50:00', '<button class="btn-link" onclick="navigateToDetail(\'iot-device-detail\',\'IoT设备详情 - DEV-004\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">详情</button> <button class="btn-link" onclick="navigateToDetail(\'iot-sync-detail\',\'设备同步 - DEV-004\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">同步</button>') +
+        tr('DEV-005', '株洲充电桩群', tag('blue','充电站'), 'OCPP 2.0', '<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">株洲充电站群</a>', tag('green','已同步'), tag('green','已同步'), '18:25:15', '<button class="btn-link" onclick="navigateToDetail(\'iot-device-detail\',\'IoT设备详情 - DEV-005\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">详情</button> <button class="btn-link" onclick="navigateToDetail(\'iot-sync-detail\',\'设备同步 - DEV-005\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">同步</button>') +
+        tr('DEV-006', '常德光伏逆变器', tag('green','光伏'), 'Modbus TCP', '<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">常德光伏电站</a>', tag('red','未配置'), tag('red','同步异常'), '06:00:00', '<button class="btn-link" onclick="navigateToDetail(\'iot-device-detail\',\'IoT设备详情 - DEV-006\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">详情</button> <button class="btn-link" onclick="navigateToDetail(\'iot-sync-detail\',\'设备同步 - DEV-006\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">同步</button>') +
+        tr('DEV-007', '衡阳工业PLC', tag('gray','工业负荷'), 'Modbus TCP', '<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">衡阳工业负荷</a>', tag('green','已同步'), tag('green','已同步'), '18:20:00', '<button class="btn-link" onclick="navigateToDetail(\'iot-device-detail\',\'IoT设备详情 - DEV-007\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">详情</button> <button class="btn-link" onclick="navigateToDetail(\'iot-sync-detail\',\'设备同步 - DEV-007\',\'resource-iot\',\'资源管理\',\'IoT平台管理\')">同步</button>') +
       '</tbody>' +
     '</table>' +
-    '<div class="pagination"><span style="margin-right:8px;color:#8c8c8c;">共42条</span><span class="page-btn active">1</span><span class="page-btn">2</span><span class="page-btn">3</span><span class="page-btn">›</span></div>' +
+    '<div class="pagination"><span style="margin-right:8px;color:#8c8c8c;">共55条</span><span class="page-btn active">1</span><span class="page-btn">2</span><span class="page-btn">3</span><span class="page-btn">›</span></div>' +
   '</div>' +
 
   // ========== 数据通道映射 ==========
@@ -1449,12 +1321,12 @@ PAGES['resource-enterprise'] = function() {
     '<table>' +
       '<thead><tr><th>企业名称</th><th>统一社会信用代码</th><th>联系人</th><th>联系电话</th><th>资源数</th><th>总可调容量</th><th>状态</th><th>接入时间</th><th>操作</th></tr></thead>' +
       '<tbody>' +
-        tr('<a onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')" style="cursor:pointer;color:var(--primary);">虹桥综合能源公司</a>', '91310105MA1FL3K2XX', '张明', '138-0013-8001', '6', '3.2 MW', tag('green','运行中'), '2024-03-15', '<button class="btn-link" onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">详情</button> <button class="btn-link" onclick="showModal(\'ent-edit-modal\')">编辑</button>') +
-        tr('<a onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')" style="cursor:pointer;color:var(--primary);">浦东储能科技有限公司</a>', '91310115MA1HJ5N3XX', '李华', '139-0013-9002', '4', '5.6 MW', tag('green','运行中'), '2024-03-20', '<button class="btn-link" onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">详情</button> <button class="btn-link" onclick="showModal(\'ent-edit-modal\')">编辑</button>') +
-        tr('<a onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')" style="cursor:pointer;color:var(--primary);">松江智慧楼宇管理公司</a>', '91310117MA1LM7P4XX', '王芳', '137-0013-7003', '3', '1.8 MW', tag('orange','维护中'), '2024-04-01', '<button class="btn-link" onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">详情</button> <button class="btn-link" onclick="showModal(\'ent-edit-modal\')">编辑</button>') +
-        tr('<a onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')" style="cursor:pointer;color:var(--primary);">嘉定新能源汽车充电公司</a>', '91310114MA1GK9Q5XX', '赵强', '136-0013-6004', '8', '4.5 MW', tag('green','运行中'), '2024-04-10', '<button class="btn-link" onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">详情</button> <button class="btn-link" onclick="showModal(\'ent-edit-modal\')">编辑</button>') +
-        tr('<a onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')" style="cursor:pointer;color:var(--primary);">青浦工业园区能源管理公司</a>', '91310118MA1KN2R6XX', '陈伟', '135-0013-5005', '5', '6.2 MW', tag('green','运行中'), '2024-05-05', '<button class="btn-link" onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">详情</button> <button class="btn-link" onclick="showModal(\'ent-edit-modal\')">编辑</button>') +
-        tr('<a onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')" style="cursor:pointer;color:var(--primary);">奉贤光伏发电公司</a>', '91310120MA1HP4S7XX', '刘洋', '134-0013-4006', '3', '2.4 MW', tag('red','停运'), '2024-05-20', '<button class="btn-link" onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">详情</button> <button class="btn-link" onclick="showModal(\'ent-edit-modal\')">编辑</button>') +
+        tr('<a onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')" style="cursor:pointer;color:var(--primary);">长沙综合能源公司</a>', '91430105MA1FL3K2XX', '张明', '138-0013-8001', '6', '3.2 MW', tag('green','运行中'), '2024-03-15', '<button class="btn-link" onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">详情</button> <button class="btn-link" onclick="showModal(\'ent-edit-modal\')">编辑</button>') +
+        tr('<a onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')" style="cursor:pointer;color:var(--primary);">湘潭新能源科技</a>', '91430115MA1HJ5N3XX', '李华', '139-0013-9002', '4', '5.6 MW', tag('green','运行中'), '2024-03-20', '<button class="btn-link" onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">详情</button> <button class="btn-link" onclick="showModal(\'ent-edit-modal\')">编辑</button>') +
+        tr('<a onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')" style="cursor:pointer;color:var(--primary);">长沙智慧楼宇管理公司</a>', '91430117MA1LM7P4XX', '王芳', '137-0013-7003', '3', '1.8 MW', tag('orange','维护中'), '2024-04-01', '<button class="btn-link" onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">详情</button> <button class="btn-link" onclick="showModal(\'ent-edit-modal\')">编辑</button>') +
+        tr('<a onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')" style="cursor:pointer;color:var(--primary);">株洲交投集团</a>', '91430114MA1GK9Q5XX', '赵强', '136-0013-6004', '8', '4.5 MW', tag('green','运行中'), '2024-04-10', '<button class="btn-link" onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">详情</button> <button class="btn-link" onclick="showModal(\'ent-edit-modal\')">编辑</button>') +
+        tr('<a onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')" style="cursor:pointer;color:var(--primary);">衡阳工业园区能源管理公司</a>', '91430118MA1KN2R6XX', '陈伟', '135-0013-5005', '5', '6.2 MW', tag('green','运行中'), '2024-05-05', '<button class="btn-link" onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">详情</button> <button class="btn-link" onclick="showModal(\'ent-edit-modal\')">编辑</button>') +
+        tr('<a onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')" style="cursor:pointer;color:var(--primary);">常德光伏发电公司</a>', '91430120MA1HP4S7XX', '刘洋', '134-0013-4006', '3', '2.4 MW', tag('red','停运'), '2024-05-20', '<button class="btn-link" onclick="navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">详情</button> <button class="btn-link" onclick="showModal(\'ent-edit-modal\')">编辑</button>') +
       '</tbody>' +
     '</table>' +
     '<div class="pagination"><span style="margin-right:8px;color:#8c8c8c;">共6条</span><span class="page-btn active">1</span><span class="page-btn">2</span><span class="page-btn">›</span></div>' +
@@ -1467,9 +1339,9 @@ PAGES['enterprise-detail'] = function() {
   var html = '' +
   '<div class="detail-header">' +
     '<div class="detail-back" onclick="goBack()">← 返回</div>' +
-    '<div class="detail-title">虹桥综合能源公司</div>' +
+    '<div class="detail-title">长沙综合能源公司</div>' +
     tag('green','运行中') +
-    '<div class="detail-subtitle">统一社会信用代码：91310105MA1FL3K2XX</div>' +
+    '<div class="detail-subtitle">统一社会信用代码：91430105MA1FL3K2XX</div>' +
   '</div>' +
   '<div class="detail-tabs">' +
     '<div class="tab active" onclick="switchTab(this,\'tab-base\')">基本信息</div>' +
@@ -1483,14 +1355,14 @@ PAGES['enterprise-detail'] = function() {
     '<div class="card">' +
       '<div class="card-title">企业基本信息</div>' +
       '<div class="detail-info-grid">' +
-        '<div class="detail-info-item"><div class="detail-info-label">企业名称</div><div class="detail-info-value">虹桥综合能源公司</div></div>' +
-        '<div class="detail-info-item"><div class="detail-info-label">统一社会信用代码</div><div class="detail-info-value">91310105MA1FL3K2XX</div></div>' +
+        '<div class="detail-info-item"><div class="detail-info-label">企业名称</div><div class="detail-info-value">长沙综合能源公司</div></div>' +
+        '<div class="detail-info-item"><div class="detail-info-label">统一社会信用代码</div><div class="detail-info-value">91430105MA1FL3K2XX</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">企业类型</div><div class="detail-info-value">综合能源服务商</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">联系人</div><div class="detail-info-value">张明</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">联系电话</div><div class="detail-info-value">138-0013-8001</div></div>' +
-        '<div class="detail-info-item"><div class="detail-info-label">联系邮箱</div><div class="detail-info-value">zhangming@hongqiao-energy.com</div></div>' +
-        '<div class="detail-info-item"><div class="detail-info-label">注册地址</div><div class="detail-info-value">上海市长宁区虹桥路XX号</div></div>' +
-        '<div class="detail-info-item"><div class="detail-info-label">开户银行</div><div class="detail-info-value">中国工商银行长宁支行</div></div>' +
+        '<div class="detail-info-item"><div class="detail-info-label">联系邮箱</div><div class="detail-info-value">zhangming@changsha-energy.com</div></div>' +
+        '<div class="detail-info-item"><div class="detail-info-label">注册地址</div><div class="detail-info-value">湖南省长沙市岳麓区XX号</div></div>' +
+        '<div class="detail-info-item"><div class="detail-info-label">开户银行</div><div class="detail-info-value">中国工商银行岳麓支行</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">银行账号</div><div class="detail-info-value">1001 2845 **** 6789</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">接入时间</div><div class="detail-info-value">2024-03-15</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">资源总数</div><div class="detail-info-value">6个</div></div>' +
@@ -1514,12 +1386,12 @@ PAGES['enterprise-detail'] = function() {
       '<table>' +
         '<thead><tr><th>资源名称</th><th>资源类型</th><th>额定功率</th><th>可调上限</th><th>可调下限</th><th>响应时间</th><th>状态</th><th>操作</th></tr></thead>' +
         '<tbody>' +
-          tr('<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">虹桥充电站A</a>', tag('blue','充电站'), '500 kW', '300 kW', '0 kW', '5 min', tag('green','在线'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">详情</button>') +
-          tr('<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">虹桥储能电站</a>', tag('purple','储能'), '1 MW', '1 MW', '-1 MW', '1 min', tag('green','在线'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">详情</button>') +
-          tr('<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">虹桥商务区空调</a>', tag('orange','楼宇空调'), '800 kW', '400 kW', '0 kW', '15 min', tag('green','在线'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">详情</button>') +
-          tr('<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">虹桥中心光伏</a>', tag('green','光伏'), '300 kWp', '150 kW', '0 kW', '5 min', tag('gray','离线'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">详情</button>') +
-          tr('<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">虹桥充电站B</a>', tag('blue','充电站'), '360 kW', '200 kW', '0 kW', '5 min', tag('green','在线'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">详情</button>') +
-          tr('<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">虹桥工业负荷</a>', tag('gray','工业负荷'), '400 kW', '200 kW', '0 kW', '10 min', tag('orange','维护'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">详情</button>') +
+          tr('<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">湘潭充电站A</a>', tag('blue','充电站'), '500 kW', '300 kW', '0 kW', '5 min', tag('green','在线'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">详情</button>') +
+          tr('<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">长沙储能1号站</a>', tag('purple','储能'), '1 MW', '1 MW', '-1 MW', '1 min', tag('green','在线'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">详情</button>') +
+          tr('<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">长沙楼宇空调群</a>', tag('orange','楼宇空调'), '800 kW', '400 kW', '0 kW', '15 min', tag('green','在线'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">详情</button>') +
+          tr('<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">株洲光伏电站B</a>', tag('green','光伏'), '300 kWp', '150 kW', '0 kW', '5 min', tag('gray','离线'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">详情</button>') +
+          tr('<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">湘潭充电站B</a>', tag('blue','充电站'), '360 kW', '200 kW', '0 kW', '5 min', tag('green','在线'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">详情</button>') +
+          tr('<a style="cursor:pointer;color:var(--primary);" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">衡阳工业负荷</a>', tag('gray','工业负荷'), '400 kW', '200 kW', '0 kW', '10 min', tag('orange','维护'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'enterprise-detail\',\'\',\'企业详情\')">详情</button>') +
         '</tbody>' +
       '</table>' +
     '</div>' +
@@ -1531,9 +1403,9 @@ PAGES['enterprise-detail'] = function() {
       '<table>' +
         '<thead><tr><th>合同编号</th><th>关联资源</th><th>合同类型</th><th>有效期</th><th>收益分配</th><th>状态</th><th>操作</th></tr></thead>' +
         '<tbody>' +
-          tr('CTR-001', '虹桥储能电站', 'DR削峰+调频', '2024-03-15 ~ 2025-03-14', 'VPP 70% / 业主 30%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'enterprise-detail\',\'\',\'企业详情\')">查看</button>') +
-          tr('CTR-004', '虹桥充电站A/B', 'DR削峰+填谷', '2024-04-10 ~ 2025-04-09', 'VPP 65% / 业主 35%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'enterprise-detail\',\'\',\'企业详情\')">查看</button>') +
-          tr('CTR-008', '虹桥商务区空调', 'DR削峰', '2024-05-01 ~ 2025-04-30', 'VPP 75% / 业主 25%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'enterprise-detail\',\'\',\'企业详情\')">查看</button>') +
+          tr('CTR-001', '长沙储能1号站', 'DR削峰+调频', '2024-03-15 ~ 2025-03-14', 'VPP 70% / 业主 30%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'enterprise-detail\',\'\',\'企业详情\')">查看</button>') +
+          tr('CTR-004', '湘潭充电站A/B', 'DR削峰+填谷', '2024-04-10 ~ 2025-04-09', 'VPP 65% / 业主 35%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'enterprise-detail\',\'\',\'企业详情\')">查看</button>') +
+          tr('CTR-008', '长沙楼宇空调群', 'DR削峰', '2024-05-01 ~ 2025-04-30', 'VPP 75% / 业主 25%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'enterprise-detail\',\'\',\'企业详情\')">查看</button>') +
         '</tbody>' +
       '</table>' +
     '</div>' +
@@ -1573,9 +1445,9 @@ PAGES['enterprise-detail'] = function() {
       '<table>' +
         '<thead><tr><th>资源名称</th><th>事件编号</th><th>基线方法</th><th>基线负荷</th><th>实际负荷</th><th>响应量</th><th>状态</th><th>操作</th></tr></thead>' +
         '<tbody>' +
-          tr('虹桥储能电站', 'EVT-0615-01', '典型日法', '1,200 kWh', '320 kWh', '880 kWh', tag('green','已确认'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'enterprise-detail\',\'\',\'企业详情\')">查看</button>') +
-          tr('虹桥充电站A', 'EVT-0615-01', '事件前平均法', '850 kWh', '420 kWh', '430 kWh', tag('green','已确认'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'enterprise-detail\',\'\',\'企业详情\')">查看</button>') +
-          tr('虹桥商务区空调', 'EVT-0615-01', '典型日法', '640 kWh', '280 kWh', '360 kWh', tag('orange','待确认'), '<button class="btn-link" onclick="showActionModal(\'基线确认\',\'确认该基线数据，确认后将作为本次事件的结算依据。\')">确认</button>') +
+          tr('长沙储能1号站', 'EVT-0615-01', '典型日法', '1,200 kWh', '320 kWh', '880 kWh', tag('green','已确认'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'enterprise-detail\',\'\',\'企业详情\')">查看</button>') +
+          tr('湘潭充电站A', 'EVT-0615-01', '事件前平均法', '850 kWh', '420 kWh', '430 kWh', tag('green','已确认'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'enterprise-detail\',\'\',\'企业详情\')">查看</button>') +
+          tr('长沙楼宇空调群', 'EVT-0615-01', '典型日法', '640 kWh', '280 kWh', '360 kWh', tag('orange','待确认'), '<button class="btn-link" onclick="showActionModal(\'基线确认\',\'确认该基线数据，确认后将作为本次事件的结算依据。\')">确认</button>') +
         '</tbody>' +
       '</table>' +
     '</div>' +
@@ -1588,9 +1460,9 @@ PAGES['resource-detail'] = function() {
   var html = '' +
   '<div class="detail-header">' +
     '<div class="detail-back" onclick="goBack()">← 返回</div>' +
-    '<div class="detail-title">虹桥储能电站</div>' +
+    '<div class="detail-title">长沙储能1号站</div>' +
     tag('green','在线') +
-    '<div class="detail-subtitle">资源ID：RES-002 | 所属企业：虹桥综合能源公司</div>' +
+    '<div class="detail-subtitle">资源ID：RES-002 | 所属企业：长沙综合能源公司</div>' +
   '</div>' +
   '<div class="detail-tabs">' +
     '<div class="tab active" onclick="switchTab(this,\'rd-tab-info\')">资源档案</div>' +
@@ -1604,10 +1476,10 @@ PAGES['resource-detail'] = function() {
     '<div class="card">' +
       '<div class="card-title">基本信息</div>' +
       '<div class="detail-info-grid">' +
-        '<div class="detail-info-item"><div class="detail-info-label">资源名称</div><div class="detail-info-value">虹桥储能电站</div></div>' +
+        '<div class="detail-info-item"><div class="detail-info-label">资源名称</div><div class="detail-info-value">长沙储能1号站</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">资源ID</div><div class="detail-info-value">RES-002</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">资源类型</div><div class="detail-info-value">' + tag('purple','储能') + '</div></div>' +
-        '<div class="detail-info-item"><div class="detail-info-label">所属企业</div><div class="detail-info-value">虹桥综合能源公司</div></div>' +
+        '<div class="detail-info-item"><div class="detail-info-label">所属企业</div><div class="detail-info-value">长沙综合能源公司</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">额定功率</div><div class="detail-info-value">1,000 kW (1 MW)</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">额定容量</div><div class="detail-info-value">2,000 kWh (2 MWh)</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">可调上限</div><div class="detail-info-value">1,000 kW（放电）</div></div>' +
@@ -1626,7 +1498,7 @@ PAGES['resource-detail'] = function() {
       '<div class="card-title">IoT平台设备信息</div>' +
       '<div class="detail-info-grid">' +
         '<div class="detail-info-item"><div class="detail-info-label">IoT设备ID</div><div class="detail-info-value">DEV-001</div></div>' +
-        '<div class="detail-info-item"><div class="detail-info-label">设备名称</div><div class="detail-info-value">虹桥储能PCS</div></div>' +
+        '<div class="detail-info-item"><div class="detail-info-label">设备名称</div><div class="detail-info-value">长沙储能PCS</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">产品类型</div><div class="detail-info-value">储能变流器</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">通信协议</div><div class="detail-info-value">IEC 61850</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">MQTT ClientId</div><div class="detail-info-value">DEV_001_HQ_STORAGE</div></div>' +
@@ -1781,9 +1653,9 @@ PAGES['resource-audit'] = function() {
       '<table>' +
         '<thead><tr><th>资源名称</th><th>资源类型</th><th>IoT设备ID</th><th>所属企业</th><th>额定功率</th><th>接入阶段</th><th>操作</th></tr></thead>' +
         '<tbody>' +
-          tr('金山充电站C', tag('blue','充电站'), 'DEV-012', '嘉定新能源汽车充电公司', '360 kW', tag('blue','物模型同步'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">审核</button> <button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">详情</button>') +
-          tr('崇明储能电站', tag('purple','储能'), 'DEV-015', '浦东储能科技有限公司', '2 MW', tag('orange','能力校核'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">审核</button> <button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">详情</button>') +
-          tr('徐汇楼宇空调群', tag('orange','楼宇空调'), 'DEV-018', '松江智慧楼宇管理公司', '500 kW', tag('blue','物模型同步'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">审核</button> <button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">详情</button>') +
+          tr('常德充电站C', tag('blue','充电站'), 'DEV-012', '株洲交投集团', '360 kW', tag('blue','物模型同步'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">审核</button> <button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">详情</button>') +
+          tr('常德储能站', tag('purple','储能'), 'DEV-015', '湘潭新能源科技', '2 MW', tag('orange','能力校核'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">审核</button> <button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">详情</button>') +
+          tr('芙蓉楼宇空调群', tag('orange','楼宇空调'), 'DEV-018', '长沙智慧楼宇管理公司', '500 kW', tag('blue','物模型同步'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">审核</button> <button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">详情</button>') +
         '</tbody>' +
       '</table>' +
     '</div>' +
@@ -1792,11 +1664,11 @@ PAGES['resource-audit'] = function() {
       '<table>' +
         '<thead><tr><th>资源名称</th><th>资源类型</th><th>IoT设备ID</th><th>所属企业</th><th>激活时间</th><th>结果</th><th>操作</th></tr></thead>' +
         '<tbody>' +
-          tr('虹桥储能电站', tag('purple','储能'), 'DEV-001', '虹桥综合能源公司', '2024-03-15 14:00', tag('green','已激活'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">查看</button>') +
-          tr('虹桥充电站A', tag('blue','充电站'), 'DEV-002', '虹桥综合能源公司', '2024-03-15 14:30', tag('green','已激活'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">查看</button>') +
-          tr('浦东储能1号', tag('purple','储能'), 'DEV-003', '浦东储能科技有限公司', '2024-03-20 10:00', tag('green','已激活'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">查看</button>') +
-          tr('虹桥商务区空调', tag('orange','楼宇空调'), 'DEV-004', '虹桥综合能源公司', '2024-04-01 11:00', tag('green','已激活'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">查看</button>') +
-          tr('嘉定充电站群', tag('blue','充电站'), 'DEV-005', '嘉定新能源汽车充电公司', '2024-04-10 15:00', tag('green','已激活'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">查看</button>') +
+          tr('长沙储能1号站', tag('purple','储能'), 'DEV-001', '长沙综合能源公司', '2024-03-15 14:00', tag('green','已激活'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">查看</button>') +
+          tr('湘潭充电站A', tag('blue','充电站'), 'DEV-002', '长沙综合能源公司', '2024-03-15 14:30', tag('green','已激活'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">查看</button>') +
+          tr('湘潭储能2号站', tag('purple','储能'), 'DEV-003', '湘潭新能源科技', '2024-03-20 10:00', tag('green','已激活'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">查看</button>') +
+          tr('长沙楼宇空调群', tag('orange','楼宇空调'), 'DEV-004', '长沙综合能源公司', '2024-04-01 11:00', tag('green','已激活'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">查看</button>') +
+          tr('株洲充电站群', tag('blue','充电站'), 'DEV-005', '株洲交投集团', '2024-04-10 15:00', tag('green','已激活'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">查看</button>') +
         '</tbody>' +
       '</table>' +
       '<div class="pagination"><span class="page-btn active">1</span><span class="page-btn">2</span><span class="page-btn">3</span><span class="page-btn">›</span></div>' +
@@ -1806,8 +1678,8 @@ PAGES['resource-audit'] = function() {
       '<table>' +
         '<thead><tr><th>资源名称</th><th>资源类型</th><th>IoT设备ID</th><th>所属企业</th><th>驳回原因</th><th>状态</th><th>操作</th></tr></thead>' +
         '<tbody>' +
-          tr('某工业负荷A', tag('gray','工业负荷'), 'DEV-020', '青浦工业园区', 'IoT同步失败：Modbus网关通信超时，需升级网关固件', tag('orange','待修复'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">查看</button> <button class="btn-link" onclick="showActionModal(\'重新同步\',\'修复IoT通信问题后重新发起设备同步流程。\')">重新同步</button>') +
-          tr('某光伏电站B', tag('green','光伏'), 'DEV-021', '奉贤光伏发电公司', '装机容量不足100kW，不满足准入门槛', tag('red','已驳回'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">查看</button>') +
+          tr('某工业负荷A', tag('gray','工业负荷'), 'DEV-020', '衡阳工业园区', 'IoT同步失败：Modbus网关通信超时，需升级网关固件', tag('orange','待修复'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">查看</button> <button class="btn-link" onclick="showActionModal(\'重新同步\',\'修复IoT通信问题后重新发起设备同步流程。\')">重新同步</button>') +
+          tr('常德分布式光伏C', tag('green','光伏'), 'DEV-021', '常德光伏发电公司', '装机容量不足100kW，不满足准入门槛', tag('red','已驳回'), '<button class="btn-link" onclick="navigateToDetail(\'audit-detail\',\'接入审核详情\',\'resource-audit\',\'资源管理\',\'接入审核\')">查看</button>') +
         '</tbody>' +
       '</table>' +
     '</div>' +
@@ -1867,12 +1739,12 @@ PAGES['resource-monitor'] = function() {
         '<table>' +
           '<thead><tr><th>资源名称</th><th>类型</th><th>所属企业</th><th>实时功率</th><th>可调容量</th><th>状态</th><th>更新时间</th><th>操作</th></tr></thead>' +
           '<tbody>' +
-            tr('虹桥储能电站', tag('purple','储能'), '虹桥综合能源公司', '-320 kW', '820 kW', '<span class="status-dot running"></span>响应中', '18:25:30', '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-monitor\',\'资源管理\',\'实时监控\')">详情</button>') +
-            tr('虹桥充电站A', tag('blue','充电站'), '虹桥综合能源公司', '180 kW', '200 kW', '<span class="status-dot alarm"></span>告警', '18:25:28', '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-monitor\',\'资源管理\',\'实时监控\')">详情</button>') +
-            tr('浦东储能1号', tag('purple','储能'), '浦东储能科技有限公司', '0 kW', '960 kW', '<span class="status-dot online"></span>在线', '18:25:25', '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-monitor\',\'资源管理\',\'实时监控\')">详情</button>') +
-            tr('虹桥商务区空调', tag('orange','空调'), '虹桥综合能源公司', '350 kW', '200 kW', '<span class="status-dot running"></span>响应中', '18:25:20', '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-monitor\',\'资源管理\',\'实时监控\')">详情</button>') +
-            tr('嘉定充电站群', tag('blue','充电站'), '嘉定新能源汽车充电公司', '420 kW', '380 kW', '<span class="status-dot online"></span>在线', '18:25:15', '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-monitor\',\'资源管理\',\'实时监控\')">详情</button>') +
-            tr('奉贤光伏电站', tag('green','光伏'), '奉贤光伏发电公司', '0 kW', '0 kW', '<span class="status-dot offline"></span>离线', '18:20:00', '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-monitor\',\'资源管理\',\'实时监控\')">详情</button>') +
+            tr('长沙储能1号站', tag('purple','储能'), '长沙综合能源公司', '-320 kW', '820 kW', '<span class="status-dot running"></span>响应中', '18:25:30', '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-monitor\',\'资源管理\',\'实时监控\')">详情</button>') +
+            tr('湘潭充电站A', tag('blue','充电站'), '长沙综合能源公司', '180 kW', '200 kW', '<span class="status-dot alarm"></span>告警', '18:25:28', '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-monitor\',\'资源管理\',\'实时监控\')">详情</button>') +
+            tr('湘潭储能2号站', tag('purple','储能'), '湘潭新能源科技', '0 kW', '960 kW', '<span class="status-dot online"></span>在线', '18:25:25', '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-monitor\',\'资源管理\',\'实时监控\')">详情</button>') +
+            tr('长沙楼宇空调群', tag('orange','空调'), '长沙综合能源公司', '350 kW', '200 kW', '<span class="status-dot running"></span>响应中', '18:25:20', '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-monitor\',\'资源管理\',\'实时监控\')">详情</button>') +
+            tr('株洲充电站群', tag('blue','充电站'), '株洲交投集团', '420 kW', '380 kW', '<span class="status-dot online"></span>在线', '18:25:15', '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-monitor\',\'资源管理\',\'实时监控\')">详情</button>') +
+            tr('常德光伏电站', tag('green','光伏'), '常德光伏发电公司', '0 kW', '0 kW', '<span class="status-dot offline"></span>离线', '18:20:00', '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'resource-monitor\',\'资源管理\',\'实时监控\')">详情</button>') +
           '</tbody>' +
         '</table>' +
       '</div>' +
@@ -1906,11 +1778,11 @@ PAGES['resource-monitor'] = function() {
           '<table>' +
             '<thead><tr><th>资源</th><th>类型</th><th>当前出力</th><th>+1h预测</th><th>+4h预测</th><th>置信度</th></tr></thead>' +
             '<tbody>' +
-              tr('虹桥储能电站', tag('purple','储能'), '-320 kW', '-280 kW', '-150 kW', '高（95%）') +
-              tr('虹桥充电站A', tag('blue','充电站'), '180 kW', '220 kW', '150 kW', '中（82%）') +
-              tr('虹桥商务区空调', tag('orange','空调'), '350 kW', '400 kW', '280 kW', '高（90%）') +
-              tr('奉贤光伏电站', tag('green','光伏'), '0 kW（离线）', '—', '—', '—') +
-              tr('嘉定充电站群', tag('blue','充电站'), '420 kW', '480 kW', '350 kW', '中（78%）') +
+              tr('长沙储能1号站', tag('purple','储能'), '-320 kW', '-280 kW', '-150 kW', '高（95%）') +
+              tr('湘潭充电站A', tag('blue','充电站'), '180 kW', '220 kW', '150 kW', '中（82%）') +
+              tr('长沙楼宇空调群', tag('orange','空调'), '350 kW', '400 kW', '280 kW', '高（90%）') +
+              tr('常德光伏电站', tag('green','光伏'), '0 kW（离线）', '—', '—', '—') +
+              tr('株洲充电站群', tag('blue','充电站'), '420 kW', '480 kW', '350 kW', '中（78%）') +
             '</tbody>' +
           '</table>' +
           '<div style="font-size:11px;color:#8c8c8c;margin-top:8px;">提示：光伏出力预测依赖气象服务API辐照度数据，当前气象服务未配置，光伏预测暂不可用。</div>' +
@@ -1936,12 +1808,12 @@ PAGES['resource-monitor'] = function() {
         '<table>' +
           '<thead><tr><th>计量点编号</th><th>关联资源</th><th>计量装置型号</th><th>准确度等级</th><th>CT变比</th><th>PT变比</th><th>检定有效期</th><th>状态</th><th>操作</th></tr></thead>' +
           '<tbody>' +
-            tr('MP-001', '虹桥储能电站', 'DTZY-341Z（三相智能电能表）', '0.5S级', '300/5', '10000/100', '2025-03-10', tag('green','正常'), '<button class="btn-link" onclick="showActionModal(\'计量装置详情\',\'查看计量装置MP-001的检定记录、误差曲线和通信状态。实际系统将打开计量装置档案页。\')">详情</button> <button class="btn-link" onclick="showActionModal(\'远程抄读\',\'远程抄读计量装置当前数据，包括正向有功、反向有功、无功、电压、电流等。实际系统将发送抄表指令。\')">抄读</button>') +
-            tr('MP-002', '虹桥充电站A', 'DTZY-341Z', '0.5S级', '200/5', '380/100', '2025-06-20', tag('green','正常'), '<button class="btn-link" onclick="showActionModal(\'计量装置详情\',\'查看计量装置MP-002的检定记录和通信状态。\')">详情</button> <button class="btn-link" onclick="showActionModal(\'远程抄读\',\'远程抄读计量装置当前数据。\')">抄读</button>') +
-            tr('MP-003', '浦东储能1号', 'DTZY-341Z', '0.5S级', '400/5', '10000/100', '2025-01-15', tag('green','正常'), '<button class="btn-link" onclick="showActionModal(\'计量装置详情\',\'查看计量装置MP-003的检定记录和通信状态。\')">详情</button> <button class="btn-link" onclick="showActionModal(\'远程抄读\',\'远程抄读计量装置当前数据。\')">抄读</button>') +
-            tr('MP-004', '虹桥商务区空调', 'ACR220EL（电力仪表）', '1.0级', '150/5', '380/100', '2024-12-05', tag('orange','即将到期'), '<button class="btn-link" onclick="showActionModal(\'计量装置详情\',\'查看计量装置MP-004的检定记录和通信状态。\')">详情</button> <button class="btn-link" onclick="showActionModal(\'远程抄读\',\'远程抄读计量装置当前数据。\')">抄读</button>') +
-            tr('MP-005', '嘉定充电站群', 'DTZY-341Z', '0.5S级', '250/5', '380/100', '2024-11-30', tag('orange','即将到期'), '<button class="btn-link" onclick="showActionModal(\'计量装置详情\',\'查看计量装置MP-005的检定记录和通信状态。\')">详情</button> <button class="btn-link" onclick="showActionModal(\'远程抄读\',\'远程抄读计量装置当前数据。\')">抄读</button>') +
-            tr('MP-006', '奉贤光伏电站', 'DTZY-341Z', '0.5S级', '300/5', '10000/100', '2024-08-10', tag('gray','已过期'), '<button class="btn-link" onclick="showActionModal(\'计量装置详情\',\'查看计量装置MP-006的检定记录和通信状态。\')">详情</button> <button class="btn-link" onclick="showActionModal(\'发起检定\',\'该计量装置检定已过期，需联系法定计量检定机构重新检定。点击后系统将生成检定工单并通知运维人员。\')">发起检定</button>') +
+            tr('MP-001', '长沙储能1号站', 'DTZY-341Z（三相智能电能表）', '0.5S级', '300/5', '10000/100', '2025-03-10', tag('green','正常'), '<button class="btn-link" onclick="showActionModal(\'计量装置详情\',\'查看计量装置MP-001的检定记录、误差曲线和通信状态。实际系统将打开计量装置档案页。\')">详情</button> <button class="btn-link" onclick="showActionModal(\'远程抄读\',\'远程抄读计量装置当前数据，包括正向有功、反向有功、无功、电压、电流等。实际系统将发送抄表指令。\')">抄读</button>') +
+            tr('MP-002', '湘潭充电站A', 'DTZY-341Z', '0.5S级', '200/5', '380/100', '2025-06-20', tag('green','正常'), '<button class="btn-link" onclick="showActionModal(\'计量装置详情\',\'查看计量装置MP-002的检定记录和通信状态。\')">详情</button> <button class="btn-link" onclick="showActionModal(\'远程抄读\',\'远程抄读计量装置当前数据。\')">抄读</button>') +
+            tr('MP-003', '湘潭储能2号站', 'DTZY-341Z', '0.5S级', '400/5', '10000/100', '2025-01-15', tag('green','正常'), '<button class="btn-link" onclick="showActionModal(\'计量装置详情\',\'查看计量装置MP-003的检定记录和通信状态。\')">详情</button> <button class="btn-link" onclick="showActionModal(\'远程抄读\',\'远程抄读计量装置当前数据。\')">抄读</button>') +
+            tr('MP-004', '长沙楼宇空调群', 'ACR220EL（电力仪表）', '1.0级', '150/5', '380/100', '2024-12-05', tag('orange','即将到期'), '<button class="btn-link" onclick="showActionModal(\'计量装置详情\',\'查看计量装置MP-004的检定记录和通信状态。\')">详情</button> <button class="btn-link" onclick="showActionModal(\'远程抄读\',\'远程抄读计量装置当前数据。\')">抄读</button>') +
+            tr('MP-005', '株洲充电站群', 'DTZY-341Z', '0.5S级', '250/5', '380/100', '2024-11-30', tag('orange','即将到期'), '<button class="btn-link" onclick="showActionModal(\'计量装置详情\',\'查看计量装置MP-005的检定记录和通信状态。\')">详情</button> <button class="btn-link" onclick="showActionModal(\'远程抄读\',\'远程抄读计量装置当前数据。\')">抄读</button>') +
+            tr('MP-006', '常德光伏电站', 'DTZY-341Z', '0.5S级', '300/5', '10000/100', '2024-08-10', tag('gray','已过期'), '<button class="btn-link" onclick="showActionModal(\'计量装置详情\',\'查看计量装置MP-006的检定记录和通信状态。\')">详情</button> <button class="btn-link" onclick="showActionModal(\'发起检定\',\'该计量装置检定已过期，需联系法定计量检定机构重新检定。点击后系统将生成检定工单并通知运维人员。\')">发起检定</button>') +
           '</tbody>' +
         '</table>' +
       '</div>' +
@@ -1964,9 +1836,9 @@ PAGES['resource-monitor'] = function() {
       '<table>' +
       '<thead><tr><th>告警级别</th><th>资源名称</th><th>告警内容</th><th>触发时间</th><th>状态</th><th>操作</th></tr></thead>' +
         '<tbody>' +
-          tr(tag('red','严重'), '虹桥充电站A', '功率偏差超限（-18%），超出±10%考核阈值', '18:20:15', tag('orange','未处理'), '<button class="btn-link" onclick="showActionModal(\'告警确认\',\'确认该告警，确认后告警状态变更为已确认。\')">确认</button> <button class="btn-link" onclick="showActionModal(\'告警处理\',\'处理该告警，系统将自动派发工单给运维人员。\')">处理</button>') +
-          tr(tag('orange','重要'), '浦东储能1号', 'SOC低于下限阈值（实测8% < 下限10%）', '18:13:42', tag('orange','未处理'), '<button class="btn-link" onclick="showActionModal(\'告警确认\',\'确认该告警，确认后告警状态变更为已确认。\')">确认</button> <button class="btn-link" onclick="showActionModal(\'告警处理\',\'处理该告警，系统将自动派发工单给运维人员检查PCS及BMS状态。\')">处理</button>') +
-          tr(tag('blue','一般'), '松江楼宇空调', '通信延迟（8秒，阈值5秒）', '18:05:20', tag('blue','已确认'), '<button class="btn-link" onclick="showActionModal(\'告警详情\',\'查看该告警的详细信息及处理记录。\')">查看</button>') +
+          tr(tag('red','严重'), '湘潭充电站A', '功率偏差超限（-18%），超出±10%考核阈值', '18:20:15', tag('orange','未处理'), '<button class="btn-link" onclick="showActionModal(\'告警确认\',\'确认该告警，确认后告警状态变更为已确认。\')">确认</button> <button class="btn-link" onclick="showActionModal(\'告警处理\',\'处理该告警，系统将自动派发工单给运维人员。\')">处理</button>') +
+          tr(tag('orange','重要'), '湘潭储能2号站', 'SOC低于下限阈值（实测8% < 下限10%）', '18:13:42', tag('orange','未处理'), '<button class="btn-link" onclick="showActionModal(\'告警确认\',\'确认该告警，确认后告警状态变更为已确认。\')">确认</button> <button class="btn-link" onclick="showActionModal(\'告警处理\',\'处理该告警，系统将自动派发工单给运维人员检查PCS及BMS状态。\')">处理</button>') +
+          tr(tag('blue','一般'), '长沙楼宇空调', '通信延迟（8秒，阈值5秒）', '18:05:20', tag('blue','已确认'), '<button class="btn-link" onclick="showActionModal(\'告警详情\',\'查看该告警的详细信息及处理记录。\')">查看</button>') +
         '</tbody>' +
       '</table>' +
     '</div>' +
@@ -1992,11 +1864,11 @@ PAGES['resource-monitor'] = function() {
         '<table>' +
           '<thead><tr><th>资源名称</th><th>通信协议</th><th>网关地址</th><th>上行测试</th><th>下行测试</th><th>最后测试时间</th><th>操作</th></tr></thead>' +
           '<tbody>' +
-            tr('虹桥储能电站', 'IEC 61850', '10.20.1.10:2404', tag('green','正常（延迟120ms）'), tag('green','正常（延迟200ms）'), '2024-07-05 10:00', '<button class="btn-link" onclick="showActionModal(\'通信联调测试 - 虹桥储能电站\',\'正在对虹桥储能电站执行通信联调测试：\\n1. 上行链路：读取MMS数据点（功率/SOC/SOH/温度）\\n2. 下行链路：发送控制指令（功率限幅测试）\\n3. 延迟测试：测量端到端往返时延\\n\\n测试进行中，请稍候...\')">执行测试</button>') +
-            tr('虹桥充电站A', 'OCPP 2.0', '10.20.1.20:9000', tag('orange','延迟偏高（8s）'), tag('green','正常（延迟1.5s）'), '2024-07-05 09:55', '<button class="btn-link" onclick="showActionModal(\'通信联调测试 - 虹桥充电站A\',\'正在对虹桥充电站A执行通信联调测试。注意：上行延迟偏高，建议检查网络带宽或OCPP心跳间隔配置。\')">执行测试</button>') +
-            tr('浦东储能1号', 'IEC 61850', '10.20.2.10:2404', tag('green','正常（延迟95ms）'), tag('green','正常（延迟180ms）'), '2024-07-05 10:00', '<button class="btn-link" onclick="showActionModal(\'通信联调测试 - 浦东储能1号\',\'正在对浦东储能1号执行通信联调测试。\')">执行测试</button>') +
-            tr('松江楼宇空调', 'BACnet', '10.20.3.10:47808', tag('green','正常（延迟350ms）'), tag('green','正常（延迟500ms）'), '2024-07-04 16:00', '<button class="btn-link" onclick="showActionModal(\'通信联调测试 - 松江楼宇空调\',\'正在对松江楼宇空调执行通信联调测试。\')">执行测试</button>') +
-            tr('奉贤光伏电站', 'Modbus TCP', '10.20.4.10:502', tag('red','连接超时'), tag('red','连接超时'), '2024-07-05 06:00', '<button class="btn-link" onclick="showActionModal(\'通信联调测试 - 奉贤光伏电站\',\'奉贤光伏电站通信连接超时，可能原因：\\n1. 采集终端离线或断电\\n2. 网络中断（运营商线路故障）\\n3. Modbus网关故障\\n\\n建议：联系运维人员现场排查，或通过系统管理页面查看采集终端在线状态。\')">执行测试</button>') +
+            tr('长沙储能1号站', 'IEC 61850', '10.20.1.10:2404', tag('green','正常（延迟120ms）'), tag('green','正常（延迟200ms）'), '2024-07-05 10:00', '<button class="btn-link" onclick="showActionModal(\'通信联调测试 - 长沙储能1号站\',\'正在对长沙储能1号站执行通信联调测试：\\n1. 上行链路：读取MMS数据点（功率/SOC/SOH/温度）\\n2. 下行链路：发送控制指令（功率限幅测试）\\n3. 延迟测试：测量端到端往返时延\\n\\n测试进行中，请稍候...\')">执行测试</button>') +
+            tr('湘潭充电站A', 'OCPP 2.0', '10.20.1.20:9000', tag('orange','延迟偏高（8s）'), tag('green','正常（延迟1.5s）'), '2024-07-05 09:55', '<button class="btn-link" onclick="showActionModal(\'通信联调测试 - 湘潭充电站A\',\'正在对湘潭充电站A执行通信联调测试。注意：上行延迟偏高，建议检查网络带宽或OCPP心跳间隔配置。\')">执行测试</button>') +
+            tr('湘潭储能2号站', 'IEC 61850', '10.20.2.10:2404', tag('green','正常（延迟95ms）'), tag('green','正常（延迟180ms）'), '2024-07-05 10:00', '<button class="btn-link" onclick="showActionModal(\'通信联调测试 - 湘潭储能2号站\',\'正在对湘潭储能2号站执行通信联调测试。\')">执行测试</button>') +
+            tr('长沙楼宇空调', 'BACnet', '10.20.3.10:47808', tag('green','正常（延迟350ms）'), tag('green','正常（延迟500ms）'), '2024-07-04 16:00', '<button class="btn-link" onclick="showActionModal(\'通信联调测试 - 长沙楼宇空调\',\'正在对长沙楼宇空调执行通信联调测试。\')">执行测试</button>') +
+            tr('常德光伏电站', 'Modbus TCP', '10.20.4.10:502', tag('red','连接超时'), tag('red','连接超时'), '2024-07-05 06:00', '<button class="btn-link" onclick="showActionModal(\'通信联调测试 - 常德光伏电站\',\'常德光伏电站通信连接超时，可能原因：\\n1. 采集终端离线或断电\\n2. 网络中断（运营商线路故障）\\n3. Modbus网关故障\\n\\n建议：联系运维人员现场排查，或通过系统管理页面查看采集终端在线状态。\')">执行测试</button>') +
           '</tbody>' +
         '</table>' +
         '<div style="font-size:11px;color:#8c8c8c;margin-top:8px;">上行测试：验证设备数据采集链路（设备→网关→平台）；下行测试：验证控制指令下发链路（平台→网关→设备）。延迟要求：储能≤500ms，充电站≤3s，空调≤2s，光伏≤1s。</div>' +
@@ -2018,13 +1890,13 @@ PAGES['resource-contract'] = function() {
     '<table>' +
       '<thead><tr><th>合同编号</th><th>企业名称</th><th>关联资源</th><th>合同类型</th><th>有效期</th><th>收益分配</th><th>状态</th><th>操作</th></tr></thead>' +
       '<tbody>' +
-        tr('CTR-001', '虹桥综合能源公司', '虹桥储能电站', 'DR削峰+调频', '2024-03-15 ~ 2025-03-14', 'VPP 70% / 业主 30%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'resource-contract\',\'资源管理\',\'合同管理\')">查看</button> <button class="btn-link" onclick="showActionModal(\'合同续签\',\'发起合同续签流程，续签后合同期限延长一年。\')">续签</button>') +
-        tr('CTR-002', '虹桥综合能源公司', '虹桥充电站A/B', 'DR削峰+填谷', '2024-05-20 ~ 2025-05-19', 'VPP 65% / 业主 35%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'resource-contract\',\'资源管理\',\'合同管理\')">查看</button> <button class="btn-link" onclick="showActionModal(\'合同续签\',\'发起合同续签流程，续签后合同期限延长一年。\')">续签</button>') +
-        tr('CTR-003', '浦东储能科技有限公司', '浦东储能1号/2号', '调频+备用', '2024-04-01 ~ 2024-09-30', 'VPP 75% / 业主 25%', tag('orange','即将到期'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'resource-contract\',\'资源管理\',\'合同管理\')">查看</button> <button class="btn-link" onclick="showActionModal(\'合同续签\',\'发起合同续签流程，续签后合同期限延长一年。\')">续签</button>') +
-        tr('CTR-004', '松江智慧楼宇管理公司', '松江楼宇空调群', 'DR削峰', '2024-05-01 ~ 2025-04-30', 'VPP 70% / 业主 30%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'resource-contract\',\'资源管理\',\'合同管理\')">查看</button> <button class="btn-link" onclick="showActionModal(\'合同续签\',\'发起合同续签流程，续签后合同期限延长一年。\')">续签</button>') +
-        tr('CTR-005', '嘉定新能源汽车充电公司', '嘉定充电站群', 'DR削峰+填谷', '2024-04-10 ~ 2025-04-09', 'VPP 65% / 业主 35%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'resource-contract\',\'资源管理\',\'合同管理\')">查看</button> <button class="btn-link" onclick="showActionModal(\'合同续签\',\'发起合同续签流程，续签后合同期限延长一年。\')">续签</button>') +
-        tr('CTR-006', '青浦工业园区能源管理公司', '青浦工业负荷', 'DR削峰', '2024-05-05 ~ 2025-05-04', 'VPP 70% / 业主 30%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'resource-contract\',\'资源管理\',\'合同管理\')">查看</button> <button class="btn-link" onclick="showActionModal(\'合同续签\',\'发起合同续签流程，续签后合同期限延长一年。\')">续签</button>') +
-        tr('CTR-007', '奉贤光伏发电公司', '奉贤光伏电站', 'DR削峰（可削减）', '2024-03-01 ~ 2024-06-30', 'VPP 80% / 业主 20%', tag('gray','已到期'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'resource-contract\',\'资源管理\',\'合同管理\')">查看</button> <button class="btn-link" onclick="showActionModal(\'合同重新签订\',\'发起合同重新签订流程，需重新填写合同条款并提交审批。\')">重新签订</button>') +
+        tr('CTR-001', '长沙综合能源公司', '长沙储能1号站', 'DR削峰+调频', '2024-03-15 ~ 2025-03-14', 'VPP 70% / 业主 30%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'resource-contract\',\'资源管理\',\'合同管理\')">查看</button> <button class="btn-link" onclick="showActionModal(\'合同续签\',\'发起合同续签流程，续签后合同期限延长一年。\')">续签</button>') +
+        tr('CTR-002', '长沙综合能源公司', '湘潭充电站A/B', 'DR削峰+填谷', '2024-05-20 ~ 2025-05-19', 'VPP 65% / 业主 35%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'resource-contract\',\'资源管理\',\'合同管理\')">查看</button> <button class="btn-link" onclick="showActionModal(\'合同续签\',\'发起合同续签流程，续签后合同期限延长一年。\')">续签</button>') +
+        tr('CTR-003', '湘潭新能源科技', '湘潭储能2号站/3号站', '调频+备用', '2024-04-01 ~ 2024-09-30', 'VPP 75% / 业主 25%', tag('orange','即将到期'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'resource-contract\',\'资源管理\',\'合同管理\')">查看</button> <button class="btn-link" onclick="showActionModal(\'合同续签\',\'发起合同续签流程，续签后合同期限延长一年。\')">续签</button>') +
+        tr('CTR-004', '长沙智慧楼宇管理公司', '长沙楼宇空调群', 'DR削峰', '2024-05-01 ~ 2025-04-30', 'VPP 70% / 业主 30%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'resource-contract\',\'资源管理\',\'合同管理\')">查看</button> <button class="btn-link" onclick="showActionModal(\'合同续签\',\'发起合同续签流程，续签后合同期限延长一年。\')">续签</button>') +
+        tr('CTR-005', '株洲交投集团', '株洲充电站群', 'DR削峰+填谷', '2024-04-10 ~ 2025-04-09', 'VPP 65% / 业主 35%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'resource-contract\',\'资源管理\',\'合同管理\')">查看</button> <button class="btn-link" onclick="showActionModal(\'合同续签\',\'发起合同续签流程，续签后合同期限延长一年。\')">续签</button>') +
+        tr('CTR-006', '衡阳工业园区能源管理公司', '衡阳工业负荷', 'DR削峰', '2024-05-05 ~ 2025-05-04', 'VPP 70% / 业主 30%', tag('green','生效中'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'resource-contract\',\'资源管理\',\'合同管理\')">查看</button> <button class="btn-link" onclick="showActionModal(\'合同续签\',\'发起合同续签流程，续签后合同期限延长一年。\')">续签</button>') +
+        tr('CTR-007', '常德光伏发电公司', '常德光伏电站', 'DR削峰（可削减）', '2024-03-01 ~ 2024-06-30', 'VPP 80% / 业主 20%', tag('gray','已到期'), '<button class="btn-link" onclick="navigateToDetail(\'contract-detail\',\'合同详情\',\'resource-contract\',\'资源管理\',\'合同管理\')">查看</button> <button class="btn-link" onclick="showActionModal(\'合同重新签订\',\'发起合同重新签订流程，需重新填写合同条款并提交审批。\')">重新签订</button>') +
       '</tbody>' +
     '</table>' +
     '<div class="pagination"><span class="page-btn active">1</span><span class="page-btn">2</span><span class="page-btn">›</span></div>' +
@@ -2065,8 +1937,8 @@ DETAIL_MODALS['auditModalHTML'] = function() {
     '<span class="modal-close" onclick="hideModal(\'audit-modal\')">×</span></div>' +
     '<div class="modal-body">' +
       '<div class="info-block" style="margin-bottom:16px;">' +
-        '<div style="font-size:15px;font-weight:600;margin-bottom:8px;">金山充电站C</div>' +
-        '<div style="font-size:13px;color:#595959;">类型：充电站 | 企业：嘉定新能源汽车充电公司 | 功率：360 kW</div>' +
+        '<div style="font-size:15px;font-weight:600;margin-bottom:8px;">常德充电站C</div>' +
+        '<div style="font-size:13px;color:#595959;">类型：充电站 | 企业：株洲交投集团 | 功率：360 kW</div>' +
       '</div>' +
       '<div class="form-row">' +
         '<div class="form-item"><label class="form-label">审核结果 <span class="req">*</span></label>' +
@@ -2136,7 +2008,7 @@ DETAIL_MODALS['enterprise'] = function(name) {
     '<div class="detail-info-item"><div class="detail-info-label">资源数</div><div class="detail-info-value">6个</div></div>' +
     '<div class="detail-info-item"><div class="detail-info-label">总可调容量</div><div class="detail-info-value">3.2 MW</div></div>' +
     '<div class="detail-info-item"><div class="detail-info-label">接入时间</div><div class="detail-info-value">2024-03-15</div></div>' +
-    '<div class="detail-info-item"><div class="detail-info-label">开户银行</div><div class="detail-info-value">工商银行长宁支行</div></div>' +
+    '<div class="detail-info-item"><div class="detail-info-label">开户银行</div><div class="detail-info-value">工商银行岳麓支行</div></div>' +
   '</div>' +
   '<div style="margin-top:16px;text-align:center;">' +
     '<button class="btn btn-primary" onclick="hideModal(\'detail-modal\');navigateToDetail(\'enterprise-detail\',\'企业详情\',\'resource-enterprise\',\'资源管理\',\'企业资源管理\')">查看完整详情 →</button>' +
@@ -2149,17 +2021,17 @@ DETAIL_MODALS['entEditModalHTML'] = function() {
     '<span class="modal-close" onclick="hideModal(\'ent-edit-modal\')">×</span></div>' +
     '<div class="modal-body">' +
       '<div class="form-row">' +
-        '<div class="form-item"><label class="form-label">企业名称 <span class="req">*</span></label><input class="form-input" value="虹桥综合能源公司"></div>' +
-        '<div class="form-item"><label class="form-label">统一社会信用代码</label><input class="form-input" value="91310105MA1FL3K2XX" readonly></div>' +
+        '<div class="form-item"><label class="form-label">企业名称 <span class="req">*</span></label><input class="form-input" value="长沙综合能源公司"></div>' +
+        '<div class="form-item"><label class="form-label">统一社会信用代码</label><input class="form-input" value="91430105MA1FL3K2XX" readonly></div>' +
       '</div>' +
       '<div class="form-row">' +
         '<div class="form-item"><label class="form-label">联系人 <span class="req">*</span></label><input class="form-input" value="张明"></div>' +
         '<div class="form-item"><label class="form-label">联系电话 <span class="req">*</span></label><input class="form-input" value="138-0013-8001"></div>' +
-        '<div class="form-item"><label class="form-label">联系邮箱</label><input class="form-input" value="zhangming@hongqiao-energy.com"></div>' +
+        '<div class="form-item"><label class="form-label">联系邮箱</label><input class="form-input" value="zhangming@changsha-energy.com"></div>' +
       '</div>' +
       '<div class="form-row">' +
-        '<div class="form-item"><label class="form-label">注册地址</label><input class="form-input" value="上海市长宁区虹桥路XX号"></div>' +
-        '<div class="form-item"><label class="form-label">开户银行</label><input class="form-input" value="中国工商银行长宁支行"></div>' +
+        '<div class="form-item"><label class="form-label">注册地址</label><input class="form-input" value="湖南省长沙市岳麓区XX号"></div>' +
+        '<div class="form-item"><label class="form-label">开户银行</label><input class="form-input" value="中国工商银行岳麓支行"></div>' +
       '</div>' +
     '</div>' +
     '<div class="modal-footer"><button class="btn" onclick="hideModal(\'ent-edit-modal\')">取消</button><button class="btn btn-primary" onclick="hideModal(\'ent-edit-modal\')">保存</button></div>';
@@ -2171,8 +2043,8 @@ DETAIL_MODALS['contractModalHTML'] = function() {
     '<span class="modal-close" onclick="hideModal(\'contract-modal\')">×</span></div>' +
     '<div class="modal-body">' +
       '<div class="form-row">' +
-        '<div class="form-item"><label class="form-label">关联企业 <span class="req">*</span></label><select class="form-select"><option>请选择企业</option><option>虹桥综合能源公司</option><option>浦东储能科技有限公司</option></select></div>' +
-        '<div class="form-item"><label class="form-label">关联资源 <span class="req">*</span></label><select class="form-select"><option>请选择资源</option><option>虹桥储能电站</option><option>虹桥充电站A</option></select></div>' +
+        '<div class="form-item"><label class="form-label">关联企业 <span class="req">*</span></label><select class="form-select"><option>请选择企业</option><option>长沙综合能源公司</option><option>湘潭新能源科技</option></select></div>' +
+        '<div class="form-item"><label class="form-label">关联资源 <span class="req">*</span></label><select class="form-select"><option>请选择资源</option><option>长沙储能1号站</option><option>湘潭充电站A</option></select></div>' +
       '</div>' +
       '<div class="form-row">' +
         '<div class="form-item"><label class="form-label">合同类型 <span class="req">*</span></label><select class="form-select"><option>DR削峰</option><option>DR填谷</option><option>DR削峰+填谷</option><option>调频</option><option>备用</option><option>DR削峰+调频</option></select></div>' +
@@ -2208,7 +2080,7 @@ DETAIL_MODALS['declareModalHTML'] = function() {
         '<div class="form-item"><label class="form-label">电量补偿价（元/kWh）</label><input class="form-input" type="number" value="0.38" readonly></div>' +
       '</div>' +
       '<div class="form-row">' +
-        '<div class="form-item"><label class="form-label">关联资源 <span class="req">*</span></label><select class="form-select" multiple style="height:80px;"><option selected>虹桥储能电站</option><option selected>虹桥充电站A</option><option selected>虹桥商务区空调</option><option>虹桥充电站B</option><option>嘉定充电站群</option></select></div>' +
+        '<div class="form-item"><label class="form-label">关联资源 <span class="req">*</span></label><select class="form-select" multiple style="height:80px;"><option selected>长沙储能1号站</option><option selected>湘潭充电站A</option><option selected>长沙楼宇空调群</option><option>湘潭充电站B</option><option>株洲充电站群</option></select></div>' +
       '</div>' +
       '<div class="info-block" style="font-size:12px;color:#8c8c8c;">提示：容量补偿价和电量补偿价为当前市场出清价格，申报时以此价格为基础。实际成交价以出清结果为准。</div>' +
     '</div>' +
@@ -2344,7 +2216,7 @@ PAGES['market-overview'] = function() {
         '</table>' +
       '</div>' +
       '<div class="card" style="margin-top:16px;">' +
-        '<div class="card-title">市场品种说明（上海市电力市场）</div>' +
+        '<div class="card-title">市场品种说明（长沙市电力市场）</div>' +
         '<table>' +
           '<thead><tr><th>市场品种</th><th>补偿机制</th><th>响应要求</th><th>典型时段</th><th>VPP参与资源</th></tr></thead>' +
           '<tbody>' +
@@ -2354,7 +2226,7 @@ PAGES['market-overview'] = function() {
             tr('<strong>备用辅助服务</strong>', '容量补偿（按小时）', '10分钟内达到申报容量，待命状态', '全天待命', '储能/工业负荷（可快速关停）') +
           '</tbody>' +
         '</table>' +
-        '<div style="font-size:11px;color:#8c8c8c;margin-top:8px;">注：以上补偿标准参考上海市需求响应及辅助服务市场规则，实际以电力交易中心发布的最新规则为准。VPP作为聚合商参与市场，需具备售电资质或需求响应运营商资质。</div>' +
+        '<div style="font-size:11px;color:#8c8c8c;margin-top:8px;">注：以上补偿标准参考长沙市需求响应及辅助服务市场规则，实际以电力交易中心发布的最新规则为准。VPP作为聚合商参与市场，需具备售电资质或需求响应运营商资质。</div>' +
       '</div>' +
     '</div>' +
     '<div class="tab-content" id="mkt-opportunity">' +
@@ -2374,8 +2246,8 @@ PAGES['market-overview'] = function() {
         '<table>' +
           '<thead><tr><th>资源名称</th><th>已锁定时段</th><th>锁定市场</th><th>锁定容量</th><th>剩余可用</th></tr></thead>' +
           '<tbody>' +
-            tr('虹桥储能电站', '7/6 14:00~16:00', 'DR削峰', '500 kW', '500 kW') +
-            tr('浦东储能1号', '7/8 10:00~12:00', '调频', '1 MW', '0 kW') +
+            tr('长沙储能1号站', '7/6 14:00~16:00', 'DR削峰', '500 kW', '500 kW') +
+            tr('湘潭储能2号站', '7/8 10:00~12:00', '调频', '1 MW', '0 kW') +
           '</tbody>' +
         '</table>' +
       '</div>' +
@@ -2397,11 +2269,11 @@ PAGES['market-declare'] = function() {
     '<table>' +
       '<thead><tr><th>申报编号</th><th>市场品种</th><th>申报容量</th><th>容量补偿价</th><th>电量/里程补偿价</th><th>关联资源</th><th>状态</th><th>操作</th></tr></thead>' +
       '<tbody>' +
-        tr('DEC-2024-061', 'DR削峰', '5,000 kW', '22 元/kW/次', '0.38 元/kWh', '虹桥储能+充电站A', tag('green','已出清'), '<button class="btn-link" onclick="navigateToDetail(\'declare-detail\',\'申报详情\',\'market-declare\',\'市场交易\',\'交易申报\')">详情</button> <button class="btn-link" onclick="navigate(\'market-clearing\',\'市场交易\',\'出清管理\')">出清结果</button>') +
-        tr('DEC-2024-062', '调频', '3 MW', '12 元/MW', '8 元/MW·min', '浦东储能1号', tag('green','已出清'), '<button class="btn-link" onclick="navigateToDetail(\'declare-detail\',\'申报详情\',\'market-declare\',\'市场交易\',\'交易申报\')">详情</button> <button class="btn-link" onclick="navigate(\'market-clearing\',\'市场交易\',\'出清管理\')">出清结果</button>') +
-        tr('DEC-2024-063', 'DR填谷', '4,000 kW', '—', '0.20 元/kWh', '虹桥储能+充电站B', tag('blue','已提交'), '<button class="btn-link" onclick="navigateToDetail(\'declare-detail\',\'申报详情\',\'market-declare\',\'市场交易\',\'交易申报\')">查看</button>') +
-        tr('DEC-2024-064', '备用', '2 MW', '20 元/MW·h', '—', '浦东储能2号', tag('orange','草稿'), '<button class="btn-link" onclick="showActionModal(\'编辑申报\',\'编辑草稿申报 DEC-2024-064，可修改申报容量和价格。实际系统将打开申报编辑表单。\')">编辑</button> <button class="btn-link" onclick="showActionModal(\'提交申报\',\'提交申报 DEC-2024-064 至电力交易平台，提交后不可修改。实际系统将弹出确认对话框。\')">提交</button>') +
-        tr('DEC-2024-058', 'DR削峰', '3,500 kW', '20 元/kW/次', '0.35 元/kWh', '虹桥充电站群', tag('gray','未中标'), '<button class="btn-link" onclick="navigateToDetail(\'declare-detail\',\'申报详情\',\'market-declare\',\'市场交易\',\'交易申报\')">查看</button>') +
+        tr('DEC-2024-061', 'DR削峰', '5,000 kW', '22 元/kW/次', '0.38 元/kWh', '长沙储能+湘潭充电站A', tag('green','已出清'), '<button class="btn-link" onclick="navigateToDetail(\'declare-detail\',\'申报详情\',\'market-declare\',\'市场交易\',\'交易申报\')">详情</button> <button class="btn-link" onclick="navigate(\'market-clearing\',\'市场交易\',\'出清管理\')">出清结果</button>') +
+        tr('DEC-2024-062', '调频', '3 MW', '12 元/MW', '8 元/MW·min', '湘潭储能2号站', tag('green','已出清'), '<button class="btn-link" onclick="navigateToDetail(\'declare-detail\',\'申报详情\',\'market-declare\',\'市场交易\',\'交易申报\')">详情</button> <button class="btn-link" onclick="navigate(\'market-clearing\',\'市场交易\',\'出清管理\')">出清结果</button>') +
+        tr('DEC-2024-063', 'DR填谷', '4,000 kW', '—', '0.20 元/kWh', '长沙储能+湘潭充电站B', tag('blue','已提交'), '<button class="btn-link" onclick="navigateToDetail(\'declare-detail\',\'申报详情\',\'market-declare\',\'市场交易\',\'交易申报\')">查看</button>') +
+        tr('DEC-2024-064', '备用', '2 MW', '20 元/MW·h', '—', '湘潭储能3号站', tag('orange','草稿'), '<button class="btn-link" onclick="showActionModal(\'编辑申报\',\'编辑草稿申报 DEC-2024-064，可修改申报容量和价格。实际系统将打开申报编辑表单。\')">编辑</button> <button class="btn-link" onclick="showActionModal(\'提交申报\',\'提交申报 DEC-2024-064 至电力交易平台，提交后不可修改。实际系统将弹出确认对话框。\')">提交</button>') +
+        tr('DEC-2024-058', 'DR削峰', '3,500 kW', '20 元/kW/次', '0.35 元/kWh', '湘潭充电站群', tag('gray','未中标'), '<button class="btn-link" onclick="navigateToDetail(\'declare-detail\',\'申报详情\',\'market-declare\',\'市场交易\',\'交易申报\')">查看</button>') +
       '</tbody>' +
     '</table>' +
   '</div>';
@@ -2507,7 +2379,7 @@ PAGES['event-dispatch'] = function() {
     '<div class="resource-match-card selected">' +
       '<div class="resource-match-check"></div>' +
       '<div class="resource-match-info">' +
-        '<div style="font-weight:600;margin-bottom:4px;">虹桥储能电站 <span style="font-size:12px;color:#8c8c8c;font-weight:400;">| 储能 | 虹桥综合能源公司</span></div>' +
+        '<div style="font-weight:600;margin-bottom:4px;">长沙储能1号站 <span style="font-size:12px;color:#8c8c8c;font-weight:400;">| 储能 | 长沙综合能源公司</span></div>' +
         '<div style="font-size:12px;color:#595959;">可调上限：1,000 kW | SOC：68% | 响应时间：1min | 持续：2h</div>' +
       '</div>' +
       '<div style="text-align:right;"><div style="font-size:18px;font-weight:700;color:var(--primary);">1,000</div><div style="font-size:12px;color:#8c8c8c;">kW</div></div>' +
@@ -2515,7 +2387,7 @@ PAGES['event-dispatch'] = function() {
     '<div class="resource-match-card selected">' +
       '<div class="resource-match-check"></div>' +
       '<div class="resource-match-info">' +
-        '<div style="font-weight:600;margin-bottom:4px;">虹桥充电站A <span style="font-size:12px;color:#8c8c8c;font-weight:400;">| 充电站 | 虹桥综合能源公司</span></div>' +
+        '<div style="font-weight:600;margin-bottom:4px;">湘潭充电站A <span style="font-size:12px;color:#8c8c8c;font-weight:400;">| 充电站 | 长沙综合能源公司</span></div>' +
         '<div style="font-size:12px;color:#595959;">可调上限：300 kW | 当前功率：180 kW | 可控桩比例：80%</div>' +
       '</div>' +
       '<div style="text-align:right;"><div style="font-size:18px;font-weight:700;color:var(--primary);">300</div><div style="font-size:12px;color:#8c8c8c;">kW</div></div>' +
@@ -2523,7 +2395,7 @@ PAGES['event-dispatch'] = function() {
     '<div class="resource-match-card selected">' +
       '<div class="resource-match-check"></div>' +
       '<div class="resource-match-info">' +
-        '<div style="font-weight:600;margin-bottom:4px;">虹桥商务区空调 <span style="font-size:12px;color:#8c8c8c;font-weight:400;">| 楼宇空调 | 虹桥综合能源公司</span></div>' +
+        '<div style="font-weight:600;margin-bottom:4px;">长沙楼宇空调群 <span style="font-size:12px;color:#8c8c8c;font-weight:400;">| 楼宇空调 | 长沙综合能源公司</span></div>' +
         '<div style="font-size:12px;color:#595959;">可调上限：400 kW | 当前功率：350 kW | 柔性系数：0.5</div>' +
       '</div>' +
       '<div style="text-align:right;"><div style="font-size:18px;font-weight:700;color:var(--primary);">400</div><div style="font-size:12px;color:#8c8c8c;">kW</div></div>' +
@@ -2531,7 +2403,7 @@ PAGES['event-dispatch'] = function() {
     '<div class="resource-match-card selected">' +
       '<div class="resource-match-check"></div>' +
       '<div class="resource-match-info">' +
-        '<div style="font-weight:600;margin-bottom:4px;">嘉定充电站群 <span style="font-size:12px;color:#8c8c8c;font-weight:400;">| 充电站 | 嘉定新能源汽车充电公司</span></div>' +
+        '<div style="font-weight:600;margin-bottom:4px;">株洲充电站群 <span style="font-size:12px;color:#8c8c8c;font-weight:400;">| 充电站 | 株洲交投集团</span></div>' +
         '<div style="font-size:12px;color:#595959;">可调上限：380 kW | 当前功率：420 kW | 可控桩比例：75%</div>' +
       '</div>' +
       '<div style="text-align:right;"><div style="font-size:18px;font-weight:700;color:var(--primary);">380</div><div style="font-size:12px;color:#8c8c8c;">kW</div></div>' +
@@ -2539,7 +2411,7 @@ PAGES['event-dispatch'] = function() {
     '<div class="resource-match-card selected">' +
       '<div class="resource-match-check"></div>' +
       '<div class="resource-match-info">' +
-        '<div style="font-weight:600;margin-bottom:4px;">青浦工业负荷 <span style="font-size:12px;color:#8c8c8c;font-weight:400;">| 工业负荷 | 青浦工业园区</span></div>' +
+        '<div style="font-weight:600;margin-bottom:4px;">衡阳工业负荷 <span style="font-size:12px;color:#8c8c8c;font-weight:400;">| 工业负荷 | 衡阳工业园区</span></div>' +
         '<div style="font-size:12px;color:#595959;">可调上限：200 kW | 当前功率：180 kW | 排产约束：可停</div>' +
       '</div>' +
       '<div style="text-align:right;"><div style="font-size:18px;font-weight:700;color:var(--primary);">200</div><div style="font-size:12px;color:#8c8c8c;">kW</div></div>' +
@@ -2547,7 +2419,7 @@ PAGES['event-dispatch'] = function() {
     '<div class="resource-match-card">' +
       '<div class="resource-match-check"></div>' +
       '<div class="resource-match-info">' +
-        '<div style="font-weight:600;margin-bottom:4px;color:#8c8c8c;">浦东储能1号 <span style="font-size:12px;color:var(--danger);">| 容量已锁定</span></div>' +
+        '<div style="font-weight:600;margin-bottom:4px;color:#8c8c8c;">湘潭储能2号站 <span style="font-size:12px;color:var(--danger);">| 容量已锁定</span></div>' +
         '<div style="font-size:12px;color:#8c8c8c;">可调上限：0 kW | 已被7/8调频事件锁定</div>' +
       '</div>' +
       '<div style="text-align:right;"><div style="font-size:18px;font-weight:700;color:var(--text-3);">0</div><div style="font-size:12px;color:#8c8c8c;">kW</div></div>' +
@@ -2571,20 +2443,20 @@ PAGES['control-potential'] = function() {
     '</div>' +
     '<div class="tab-content active" id="pot-overview">' +
       '<div class="stat-row">' +
-        '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--primary);">12.8 MW</div><div class="stat-mini-label">总可调上限</div></div>' +
-        '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--success);">8.5 MW</div><div class="stat-mini-label">当前可调容量</div></div>' +
+        '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--primary);">33.0 MW</div><div class="stat-mini-label">总可调上限</div></div>' +
+        '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--success);">21.5 MW</div><div class="stat-mini-label">当前可调容量</div></div>' +
         '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--warning);">66%</div><div class="stat-mini-label">平均置信度</div></div>' +
         '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--success);">93%</div><div class="stat-mini-label">历史准确率</div></div>' +
       '</div>' +
       '<table>' +
         '<thead><tr><th>资源名称</th><th>类型</th><th>额定功率</th><th>可调上限</th><th>可调下限</th><th>实时可调</th><th>置信度</th><th>更新时间</th></tr></thead>' +
         '<tbody>' +
-          tr('虹桥储能电站', tag('purple','储能'), '1,000 kW', '1,000 kW', '-1,000 kW', '820 kW', '95%', '18:25') +
-          tr('浦东储能1号', tag('purple','储能'), '1,000 kW', '1,000 kW', '-1,000 kW', '960 kW', '95%', '18:25') +
-          tr('虹桥充电站A', tag('blue','充电站'), '500 kW', '300 kW', '0 kW', '200 kW', '72%', '18:25') +
-          tr('虹桥商务区空调', tag('orange','空调'), '800 kW', '400 kW', '0 kW', '200 kW', '68%', '18:25') +
-          tr('嘉定充电站群', tag('blue','充电站'), '1,200 kW', '600 kW', '0 kW', '380 kW', '75%', '18:25') +
-          tr('青浦工业负荷', tag('gray','工业负荷'), '400 kW', '200 kW', '0 kW', '200 kW', '60%', '18:25') +
+          tr('长沙储能1号站', tag('purple','储能'), '1,000 kW', '1,000 kW', '-1,000 kW', '820 kW', '95%', '18:25') +
+          tr('湘潭储能2号站', tag('purple','储能'), '1,000 kW', '1,000 kW', '-1,000 kW', '960 kW', '95%', '18:25') +
+          tr('湘潭充电站A', tag('blue','充电站'), '500 kW', '300 kW', '0 kW', '200 kW', '72%', '18:25') +
+          tr('长沙楼宇空调群', tag('orange','空调'), '800 kW', '400 kW', '0 kW', '200 kW', '68%', '18:25') +
+          tr('株洲充电站群', tag('blue','充电站'), '1,200 kW', '600 kW', '0 kW', '380 kW', '75%', '18:25') +
+          tr('衡阳工业负荷', tag('gray','工业负荷'), '400 kW', '200 kW', '0 kW', '200 kW', '60%', '18:25') +
         '</tbody>' +
       '</table>' +
     '</div>' +
@@ -2626,6 +2498,26 @@ PAGES['control-potential'] = function() {
 // ==================== 调控策略 ====================
 PAGES['control-strategy'] = function() {
   var html = '' +
+  '<div class="card" style="background:linear-gradient(135deg,#e6f7ff,#f0f5ff);margin-bottom:16px;">' +
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">' +
+      '<div style="font-size:16px;font-weight:600;color:var(--text-1);">分层优先级调度机制（双向充放电）</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;">' +
+      '<div style="flex:1;min-width:200px;background:#fff;padding:12px 16px;border-radius:6px;border-left:4px solid var(--danger);">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--danger);">第一优先级：设备安全</div>' +
+        '<div style="font-size:12px;color:var(--text-3);margin-top:4px;">SOC越限保护 · PCS过载保护 · BMS异常联锁</div>' +
+      '</div>' +
+      '<div style="flex:1;min-width:200px;background:#fff;padding:12px 16px;border-radius:6px;border-left:4px solid var(--warning);">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--warning);">第二优先级：本地运营</div>' +
+        '<div style="font-size:12px;color:var(--text-3);margin-top:4px;">充电站服务保障 · 楼宇舒适度约束 · 工业产能保障</div>' +
+      '</div>' +
+      '<div style="flex:1;min-width:200px;background:#fff;padding:12px 16px;border-radius:6px;border-left:4px solid var(--primary);">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--primary);">第三优先级：市场参与</div>' +
+        '<div style="font-size:12px;color:var(--text-3);margin-top:4px;">DR削峰/填谷 · 调频辅助服务 · 现货市场套利</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="margin-top:10px;font-size:12px;color:var(--text-3);">储能支持双向充放电指令，调度系统自动在充放电模式间切换，确保安全边界内收益最大化。</div>' +
+  '</div>' +
   '<div class="card">' +
     '<div class="toolbar">' +
       '<input class="input" placeholder="搜索策略名称">' +
@@ -2682,11 +2574,11 @@ PAGES['control-workbench'] = function() {
       '<table>' +
         '<thead><tr><th>资源名称</th><th>目标功率</th><th>实际功率</th><th>偏差率</th><th>状态</th><th>操作</th></tr></thead>' +
         '<tbody>' +
-          tr('虹桥储能电站', '-500 kW', '-460 kW', '-8%', tag('green','正常'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'control-workbench\',\'调控执行\',\'指令工作台\')">详情</button>') +
-          tr('虹桥充电站A', '-300 kW', '-246 kW', '-18%', tag('orange','偏差'), '<button class="btn-link" onclick="showActionModal(\'资源干预\',\'虹桥充电站A 功率偏差 -18% 超出阈值，可下发调整指令或切换至备用资源。实际系统将打开干预操作面板。\')">干预</button>') +
-          tr('虹桥商务区空调', '-400 kW', '-380 kW', '-5%', tag('green','正常'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'control-workbench\',\'调控执行\',\'指令工作台\')">详情</button>') +
-          tr('嘉定充电站群', '-380 kW', '-380 kW', '0%', tag('green','正常'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'control-workbench\',\'调控执行\',\'指令工作台\')">详情</button>') +
-          tr('青浦工业负荷', '-200 kW', '-180 kW', '-10%', tag('orange','偏差'), '<button class="btn-link" onclick="showActionModal(\'资源干预\',\'青浦工业负荷 功率偏差 -10%，接近考核阈值，建议下发调整指令。实际系统将打开干预操作面板。\')">干预</button>') +
+          tr('长沙储能1号站', '-500 kW', '-460 kW', '-8%', tag('green','正常'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'control-workbench\',\'调控执行\',\'指令工作台\')">详情</button>') +
+          tr('湘潭充电站A', '-300 kW', '-246 kW', '-18%', tag('orange','偏差'), '<button class="btn-link" onclick="showActionModal(\'资源干预\',\'湘潭充电站A 功率偏差 -18% 超出阈值，可下发调整指令或切换至备用资源。实际系统将打开干预操作面板。\')">干预</button>') +
+          tr('长沙楼宇空调群', '-400 kW', '-380 kW', '-5%', tag('green','正常'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'control-workbench\',\'调控执行\',\'指令工作台\')">详情</button>') +
+          tr('株洲充电站群', '-380 kW', '-380 kW', '0%', tag('green','正常'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'control-workbench\',\'调控执行\',\'指令工作台\')">详情</button>') +
+          tr('衡阳工业负荷', '-200 kW', '-180 kW', '-10%', tag('orange','偏差'), '<button class="btn-link" onclick="showActionModal(\'资源干预\',\'衡阳工业负荷 功率偏差 -10%，接近考核阈值，建议下发调整指令。实际系统将打开干预操作面板。\')">干预</button>') +
         '</tbody>' +
       '</table>' +
     '</div>' +
@@ -2709,7 +2601,7 @@ PAGES['control-assessment'] = function() {
   var html = '' +
   '<div class="card">' +
     '<div class="stat-row">' +
-      '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--success);">96.2%</div><div class="stat-mini-label">本月考核合格率</div></div>' +
+      '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--success);">97.5%</div><div class="stat-mini-label">本月考核合格率</div></div>' +
       '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--danger);">¥1.26万</div><div class="stat-mini-label">本月考核扣款</div></div>' +
       '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--orange);">2</div><div class="stat-mini-label">待处理考核项</div></div>' +
       '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--primary);">18</div><div class="stat-mini-label">本月考核总数</div></div>' +
@@ -2806,12 +2698,12 @@ PAGES['settlement-baseline'] = function() {
     '<table>' +
       '<thead><tr><th>资源名称</th><th>事件编号</th><th>基线方法</th><th>基线负荷</th><th>实际负荷</th><th>响应量</th><th>状态</th><th>操作</th></tr></thead>' +
       '<tbody>' +
-        tr('虹桥储能电站', 'EVT-0615-01', '典型日法', '1,200 kWh', '320 kWh', '880 kWh', tag('green','已确认'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'settlement-baseline\',\'结算收益\',\'基线管理\')">查看</button>') +
-        tr('虹桥充电站A', 'EVT-0615-01', '事件前平均法', '850 kWh', '420 kWh', '430 kWh', tag('green','已确认'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'settlement-baseline\',\'结算收益\',\'基线管理\')">查看</button>') +
-        tr('虹桥商务区空调', 'EVT-0615-01', '典型日法', '640 kWh', '280 kWh', '360 kWh', tag('orange','待确认'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'settlement-baseline\',\'结算收益\',\'基线管理\')">确认</button> <button class="btn-link" onclick="showActionModal(\'基线异议\',\'对虹桥商务区空调在 EVT-0615-01 事件的基线计算结果提出异议，需提供实际运行数据佐证。实际系统将打开异议申请表单。\')">异议</button>') +
-        tr('浦东储能1号', 'EVT-0614-02', '事件前平均法', '950 kWh', '200 kWh', '750 kWh', tag('blue','待审核'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'settlement-baseline\',\'结算收益\',\'基线管理\')">审核</button>') +
-        tr('嘉定充电站群', 'EVT-0614-02', '典型日法', '1,100 kWh', '680 kWh', '420 kWh', tag('green','已确认'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'settlement-baseline\',\'结算收益\',\'基线管理\')">查看</button>') +
-        tr('青浦工业负荷', 'EVT-0528-02', '回归法', '520 kWh', '360 kWh', '160 kWh', tag('red','有异议'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'settlement-baseline\',\'结算收益\',\'基线管理\')">处理</button>') +
+        tr('长沙储能1号站', 'EVT-0615-01', '典型日法', '1,200 kWh', '320 kWh', '880 kWh', tag('green','已确认'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'settlement-baseline\',\'结算收益\',\'基线管理\')">查看</button>') +
+        tr('湘潭充电站A', 'EVT-0615-01', '事件前平均法', '850 kWh', '420 kWh', '430 kWh', tag('green','已确认'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'settlement-baseline\',\'结算收益\',\'基线管理\')">查看</button>') +
+        tr('长沙楼宇空调群', 'EVT-0615-01', '典型日法', '640 kWh', '280 kWh', '360 kWh', tag('orange','待确认'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'settlement-baseline\',\'结算收益\',\'基线管理\')">确认</button> <button class="btn-link" onclick="showActionModal(\'基线异议\',\'对长沙楼宇空调群在 EVT-0615-01 事件的基线计算结果提出异议，需提供实际运行数据佐证。实际系统将打开异议申请表单。\')">异议</button>') +
+        tr('湘潭储能2号站', 'EVT-0614-02', '事件前平均法', '950 kWh', '200 kWh', '750 kWh', tag('blue','待审核'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'settlement-baseline\',\'结算收益\',\'基线管理\')">审核</button>') +
+        tr('株洲充电站群', 'EVT-0614-02', '典型日法', '1,100 kWh', '680 kWh', '420 kWh', tag('green','已确认'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'settlement-baseline\',\'结算收益\',\'基线管理\')">查看</button>') +
+        tr('衡阳工业负荷', 'EVT-0528-02', '回归法', '520 kWh', '360 kWh', '160 kWh', tag('red','有异议'), '<button class="btn-link" onclick="navigateToDetail(\'baseline-detail\',\'基线详情\',\'settlement-baseline\',\'结算收益\',\'基线管理\')">处理</button>') +
       '</tbody>' +
     '</table>' +
   '</div>';
@@ -2909,10 +2801,10 @@ PAGES['settlement-revenue'] = function() {
   var html = '' +
   '<div class="card">' +
     '<div class="stat-row">' +
-      '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--primary);">¥86.4万</div><div class="stat-mini-label">本月总收益</div></div>' +
+      '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--primary);">¥94.6万</div><div class="stat-mini-label">本月总收益</div></div>' +
       '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--success);">12.3%</div><div class="stat-mini-label">环比增长</div></div>' +
-      '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--danger);">¥1.26万</div><div class="stat-mini-label">考核扣款(1.5%)</div></div>' +
-      '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--success);">¥2.06万</div><div class="stat-mini-label">单资源月均收益</div></div>' +
+      '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--danger);">¥0.85万</div><div class="stat-mini-label">考核扣款(0.9%)</div></div>' +
+      '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--success);">¥1.72万</div><div class="stat-mini-label">单资源月均收益</div></div>' +
     '</div>' +
     '<div class="tabs">' +
       '<div class="tab active" onclick="switchTab(this,\'rev-trend\')">收益趋势</div>' +
@@ -2922,9 +2814,9 @@ PAGES['settlement-revenue'] = function() {
     '<div class="tab-content active" id="rev-trend">' +
       '<div class="line-chart-wrap">' + lineChart({data:[
             {label:'2月',val:42.1},{label:'3月',val:46.8},{label:'4月',val:55.2},
-            {label:'5月',val:59.6},{label:'6月',val:76.9},{label:'7月',val:86.4}
+            {label:'5月',val:59.6},{label:'6月',val:76.9},{label:'7月',val:94.6}
           ],height:180,color1:'#1890ff',fillArea:true,unit:'万元'}) + '</div>' +
-      '<div style="font-size:12px;color:#8c8c8c;text-align:center;margin-top:4px;">月度收益趋势（万元）— 单资源月均 = 月收益/资源数(42个)</div>' +
+      '<div style="font-size:12px;color:#8c8c8c;text-align:center;margin-top:4px;">月度收益趋势（万元）— 单资源月均 = 月收益/资源数(55个)</div>' +
     '</div>' +
     '<div class="tab-content" id="rev-breakdown">' +
       '<div class="grid-2">' +
@@ -2933,10 +2825,10 @@ PAGES['settlement-revenue'] = function() {
           '<table>' +
             '<thead><tr><th>市场品种</th><th>参与次数</th><th>收益</th><th>占比</th></tr></thead>' +
             '<tbody>' +
-              tr('DR削峰', '12', '¥38.6万', '44.7%') +
-              tr('调频', '8', '¥24.2万', '28.0%') +
-              tr('DR填谷', '6', '¥15.1万', '17.5%') +
-              tr('备用', '4', '¥8.5万', '9.8%') +
+              tr('DR削峰', '14', '¥40.2万', '42.5%') +
+              tr('调频', '6', '¥22.8万', '24.1%') +
+              tr('DR填谷', '8', '¥18.6万', '19.7%') +
+              tr('备用', '4', '¥13.0万', '13.7%') +
             '</tbody>' +
           '</table>' +
         '</div>' +
@@ -2945,11 +2837,11 @@ PAGES['settlement-revenue'] = function() {
           '<table>' +
             '<thead><tr><th>资源类型</th><th>资源数</th><th>收益</th><th>单资源均收</th></tr></thead>' +
             '<tbody>' +
-              tr(tag('purple','储能'), '8', '¥32.4万', '¥4.05万') +
-              tr(tag('blue','充电站'), '15', '¥28.6万', '¥1.91万') +
-              tr(tag('orange','楼宇空调'), '12', '¥15.2万', '¥1.27万') +
-              tr(tag('green','光伏'), '3', '¥6.8万', '¥2.27万') +
-              tr(tag('gray','工业负荷'), '4', '¥3.4万', '¥0.85万') +
+              tr(tag('green','储能'), '18', '¥35.2万', '¥1.96万') +
+              tr(tag('blue','充电站'), '12', '¥28.4万', '¥2.37万') +
+              tr(tag('orange','光伏'), '12', '¥15.6万', '¥1.30万') +
+              tr(tag('purple','楼宇空调'), '10', '¥10.2万', '¥1.02万') +
+              tr(tag('gray','工业负荷'), '3', '¥5.2万', '¥1.73万') +
             '</tbody>' +
           '</table>' +
         '</div>' +
@@ -2959,13 +2851,74 @@ PAGES['settlement-revenue'] = function() {
       '<table>' +
         '<thead><tr><th>排名</th><th>资源名称</th><th>类型</th><th>参与次数</th><th>月收益</th><th>单次均收</th></tr></thead>' +
         '<tbody>' +
-          tr('1', '浦东储能1号', tag('purple','储能'), '6', '¥4.82万', '¥0.80万') +
-          tr('2', '虹桥储能电站', tag('purple','储能'), '5', '¥4.35万', '¥0.87万') +
-          tr('3', '浦东储能2号', tag('purple','储能'), '4', '¥3.68万', '¥0.92万') +
-          tr('4', '嘉定充电站群', tag('blue','充电站'), '8', '¥2.86万', '¥0.36万') +
-          tr('5', '虹桥充电站A', tag('blue','充电站'), '7', '¥1.92万', '¥0.27万') +
+          tr('1', '长沙储能1号站', tag('green','储能'), '6', '¥4.82万', '¥0.80万') +
+          tr('2', '湘潭储能2号站', tag('green','储能'), '5', '¥4.35万', '¥0.87万') +
+          tr('3', '株洲储能3号站', tag('green','储能'), '4', '¥3.68万', '¥0.92万') +
+          tr('4', '长沙充电站群A', tag('blue','充电站'), '8', '¥2.86万', '¥0.36万') +
+          tr('5', '湘潭充电站B', tag('blue','充电站'), '7', '¥1.92万', '¥0.27万') +
         '</tbody>' +
       '</table>' +
+    '</div>' +
+  '</div>';
+  return html;
+};
+
+// ==================== 收益分成看板 ====================
+PAGES['settlement-sharing'] = function() {
+  var html = '' +
+  '<div class="kpi-row">' +
+    '<div class="kpi-card blue"><div class="kpi-label">本月总收益</div><div class="kpi-value">¥94.6万</div><div class="kpi-sub">55个资源贡献</div></div>' +
+    '<div class="kpi-card green"><div class="kpi-label">VPP运营分成</div><div class="kpi-value">¥67.2万</div><div class="kpi-sub">平均分成 71%</div></div>' +
+    '<div class="kpi-card orange"><div class="kpi-label">资源业主分成</div><div class="kpi-value">¥27.4万</div><div class="kpi-sub">平均分成 29%</div></div>' +
+    '<div class="kpi-card purple"><div class="kpi-label">待结算</div><div class="kpi-value">¥3.8万</div><div class="kpi-sub">3笔在途</div></div>' +
+  '</div>' +
+  '<div class="grid-2">' +
+    '<div class="card" style="margin:0;">' +
+      '<div class="card-title">按资源类型分成明细</div>' +
+      '<table>' +
+        '<thead><tr><th>资源类型</th><th>资源数</th><th>总收益</th><th>VPP分成</th><th>业主分成</th><th>分成比例</th></tr></thead>' +
+        '<tbody>' +
+          tr(tag('green','储能'), '18', '¥35.2万', '¥24.6万', '¥10.6万', '70/30') +
+          tr(tag('blue','充电站'), '12', '¥28.4万', '¥19.9万', '¥8.5万', '70/30') +
+          tr(tag('orange','光伏'), '12', '¥15.6万', '¥11.7万', '¥3.9万', '75/25') +
+          tr(tag('purple','楼宇空调'), '10', '¥10.2万', '¥7.7万', '¥2.5万', '75/25') +
+          tr(tag('gray','工业负荷'), '3', '¥5.2万', '¥3.3万', '¥1.9万', '65/35') +
+        '</tbody>' +
+      '</table>' +
+    '</div>' +
+    '<div class="card" style="margin:0;">' +
+      '<div class="card-title">企业级分成汇总</div>' +
+      '<table>' +
+        '<thead><tr><th>企业名称</th><th>资源数</th><th>本月收益</th><th>VPP分成</th><th>业主分成</th><th>状态</th></tr></thead>' +
+        '<tbody>' +
+          tr('长沙综合能源公司', '8', '¥28.6万', '¥20.0万', '¥8.6万', tag('green','已结算')) +
+          tr('湘潭新能源科技', '6', '¥22.4万', '¥15.7万', '¥6.7万', tag('green','已结算')) +
+          tr('株洲交投集团', '5', '¥18.2万', '¥12.7万', '¥5.5万', tag('green','已结算')) +
+          tr('株洲绿能电力', '4', '¥12.6万', '¥9.5万', '¥3.1万', tag('green','已结算')) +
+          tr('衡阳工业园区', '3', '¥8.4万', '¥5.5万', '¥2.9万', tag('orange','待确认')) +
+          tr('常德城投', '2', '¥4.4万', '¥3.1万', '¥1.3万', tag('orange','待确认')) +
+          tr('衡阳特钢集团', '1', '¥3.8万', '¥2.5万', '¥1.3万', tag('orange','待确认')) +
+        '</tbody>' +
+      '</table>' +
+    '</div>' +
+  '</div>' +
+  '<div class="card" style="margin-top:16px;">' +
+    '<div class="card-title">月度分成趋势 <span style="margin-left:auto;font-size:12px;color:var(--text-3);">VPP运营分成 vs 业主分成（万元）</span></div>' +
+    '<div class="line-chart-wrap">' + lineChart({
+      data:[
+        {label:'2月',val:29.5},{label:'3月',val:32.8},{label:'4月',val:38.6},
+        {label:'5月',val:41.7},{label:'6月',val:53.8},{label:'7月',val:67.2}
+      ],
+      data2:[
+        {label:'2月',val:12.6},{label:'3月',val:14.0},{label:'4月',val:16.6},
+        {label:'5月',val:17.9},{label:'6月',val:23.1},{label:'7月',val:27.4}
+      ],
+      height:200, color1:'#1890ff', color2:'#52c41a', unit:'万元', fillArea:true
+    }) + '</div>' +
+    '<div style="display:flex;gap:16px;font-size:12px;color:#8c8c8c;margin-top:6px;">' +
+      '<span><span style="display:inline-block;width:10px;height:3px;background:#1890ff;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>VPP运营分成</span>' +
+      '<span><span style="display:inline-block;width:10px;height:3px;background:#52c41a;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>资源业主分成</span>' +
+      '<span style="margin-left:auto;">累计已结算 <b style="color:var(--text-1);">¥598.2万</b> | 累计业主分成 <b style="color:var(--text-1);">¥243.6万</b></span>' +
     '</div>' +
   '</div>';
   return html;
@@ -2984,11 +2937,11 @@ PAGES['settlement-bill'] = function() {
     '<table>' +
       '<thead><tr><th>账单编号</th><th>企业名称</th><th>账单周期</th><th>总收益</th><th>VPP分成</th><th>业主分成</th><th>状态</th><th>操作</th></tr></thead>' +
       '<tbody>' +
-        tr('BILL-2024-07-01', '虹桥综合能源公司', '2024年7月', '¥12.8万', '¥8.96万', '¥3.84万', tag('orange','待确认'), '<button class="btn-link" onclick="navigateToDetail(\'bill-detail\',\'账单详情\',\'settlement-bill\',\'结算收益\',\'账单管理\')">详情</button> <button class="btn-link" onclick="showActionModal(\'发送账单\',\'向虹桥综合能源公司发送2024年7月账单，将通过短信和邮件通知对方确认。实际系统将弹出发送确认对话框。\')">发送</button>') +
-        tr('BILL-2024-07-02', '浦东储能科技有限公司', '2024年7月', '¥18.5万', '¥13.88万', '¥4.63万', tag('green','已确认'), '<button class="btn-link" onclick="navigateToDetail(\'bill-detail\',\'账单详情\',\'settlement-bill\',\'结算收益\',\'账单管理\')">详情</button>') +
-        tr('BILL-2024-07-03', '松江智慧楼宇管理公司', '2024年7月', '¥5.2万', '¥3.64万', '¥1.56万', tag('green','已付款'), '<button class="btn-link" onclick="navigateToDetail(\'bill-detail\',\'账单详情\',\'settlement-bill\',\'结算收益\',\'账单管理\')">详情</button>') +
-        tr('BILL-2024-07-04', '嘉定新能源汽车充电公司', '2024年7月', '¥9.8万', '¥6.37万', '¥3.43万', tag('orange','待确认'), '<button class="btn-link" onclick="navigateToDetail(\'bill-detail\',\'账单详情\',\'settlement-bill\',\'结算收益\',\'账单管理\')">详情</button>') +
-        tr('BILL-2024-07-05', '青浦工业园区能源管理公司', '2024年7月', '¥4.6万', '¥3.22万', '¥1.38万', tag('green','已确认'), '<button class="btn-link" onclick="navigateToDetail(\'bill-detail\',\'账单详情\',\'settlement-bill\',\'结算收益\',\'账单管理\')">详情</button>') +
+        tr('BILL-2024-07-01', '长沙综合能源公司', '2024年7月', '¥12.8万', '¥8.96万', '¥3.84万', tag('orange','待确认'), '<button class="btn-link" onclick="navigateToDetail(\'bill-detail\',\'账单详情\',\'settlement-bill\',\'结算收益\',\'账单管理\')">详情</button> <button class="btn-link" onclick="showActionModal(\'发送账单\',\'向长沙综合能源公司发送2024年7月账单，将通过短信和邮件通知对方确认。实际系统将弹出发送确认对话框。\')">发送</button>') +
+        tr('BILL-2024-07-02', '湘潭新能源科技', '2024年7月', '¥18.5万', '¥13.88万', '¥4.63万', tag('green','已确认'), '<button class="btn-link" onclick="navigateToDetail(\'bill-detail\',\'账单详情\',\'settlement-bill\',\'结算收益\',\'账单管理\')">详情</button>') +
+        tr('BILL-2024-07-03', '长沙智慧楼宇管理公司', '2024年7月', '¥5.2万', '¥3.64万', '¥1.56万', tag('green','已付款'), '<button class="btn-link" onclick="navigateToDetail(\'bill-detail\',\'账单详情\',\'settlement-bill\',\'结算收益\',\'账单管理\')">详情</button>') +
+        tr('BILL-2024-07-04', '株洲交投集团', '2024年7月', '¥9.8万', '¥6.37万', '¥3.43万', tag('orange','待确认'), '<button class="btn-link" onclick="navigateToDetail(\'bill-detail\',\'账单详情\',\'settlement-bill\',\'结算收益\',\'账单管理\')">详情</button>') +
+        tr('BILL-2024-07-05', '衡阳工业园区能源管理公司', '2024年7月', '¥4.6万', '¥3.22万', '¥1.38万', tag('green','已确认'), '<button class="btn-link" onclick="navigateToDetail(\'bill-detail\',\'账单详情\',\'settlement-bill\',\'结算收益\',\'账单管理\')">详情</button>') +
       '</tbody>' +
     '</table>' +
   '</div>';
@@ -3007,8 +2960,8 @@ PAGES['analysis-review'] = function() {
     '</div>' +
     '<div class="stat-row">' +
       '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--primary);">18</div><div class="stat-mini-label">本月调控次数</div></div>' +
-      '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--success);">96.2%</div><div class="stat-mini-label">执行成功率</div></div>' +
-      '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--success);">¥86.4万</div><div class="stat-mini-label">本月收益</div></div>' +
+      '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--success);">97.5%</div><div class="stat-mini-label">执行成功率</div></div>' +
+      '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--success);">¥94.6万</div><div class="stat-mini-label">本月收益</div></div>' +
       '<div class="stat-mini"><div class="stat-mini-value" style="color:var(--danger);">¥1.26万</div><div class="stat-mini-label">考核扣款</div></div>' +
     '</div>' +
     '<div class="grid-2">' +
@@ -3018,7 +2971,7 @@ PAGES['analysis-review'] = function() {
           '<thead><tr><th>指标</th><th>本月</th><th>上月</th><th>趋势</th></tr></thead>' +
           '<tbody>' +
             tr('调控次数', '18', '15', '<span style="color:var(--success)">↑20%</span>') +
-            tr('执行成功率', '96.2%', '93.5%', '<span style="color:var(--success)">↑2.7%</span>') +
+            tr('执行成功率', '97.5%', '93.5%', '<span style="color:var(--success)">↑4.0%</span>') +
             tr('平均响应时间', '2.3 min', '3.1 min', '<span style="color:var(--success)">↓25.8%</span>') +
             tr('平均达成率', '92%', '88%', '<span style="color:var(--success)">↑4%</span>') +
           '</tbody>' +
@@ -3029,8 +2982,8 @@ PAGES['analysis-review'] = function() {
         '<table>' +
           '<thead><tr><th>指标</th><th>本月</th><th>上月</th><th>趋势</th></tr></thead>' +
           '<tbody>' +
-            tr('考核合格率', '96.2%', '94.1%', '<span style="color:var(--success)">↑2.1%</span>') +
-            tr('考核扣款', '¥0.82万', '¥1.26万', '<span style="color:var(--success)">↓34.9%</span>') +
+            tr('考核合格率', '97.5%', '94.1%', '<span style="color:var(--success)">↑3.4%</span>') +
+            tr('考核扣款', '¥0.85万', '¥1.26万', '<span style="color:var(--success)">↓32.5%</span>') +
             tr('申诉次数', '1', '0', '<span style="color:var(--danger)">↑1</span>') +
           '</tbody>' +
         '</table>' +
@@ -3040,47 +2993,14 @@ PAGES['analysis-review'] = function() {
       '<div class="card-title">异常事件复盘</div>' +
       '<ul class="link-list">' +
         '<li>' + tag('red','严重') + '<span>EVT-0528-02 备用事件执行偏差10%，扣款¥12,600</span></li>' +
-        '<li>' + tag('orange','预警') + '<span>EVT-0615-01 虹桥充电站A功率偏差-18%，超出考核阈值</span></li>' +
-        '<li>' + tag('orange','预警') + '<span>浦东储能1号 SOC低于阈值，需优化充放电策略</span></li>' +
+        '<li>' + tag('orange','预警') + '<span>EVT-0615-01 湘潭充电站A功率偏差-18%，超出考核阈值</span></li>' +
+        '<li>' + tag('orange','预警') + '<span>长沙储能1号站 SOC低于阈值，需优化充放电策略</span></li>' +
       '</ul>' +
     '</div>' +
   '</div>';
   return html;
 };
 
-// ==================== KPI 分析 ====================
-PAGES['analysis-kpi'] = function() {
-  var html = '' +
-  '<div class="kpi-row">' +
-    '<div class="kpi-card blue"><div class="kpi-label">资源利用率</div><div class="kpi-value">72.5<span class="kpi-unit">%</span></div><div class="kpi-trend up">↑ 5.2% vs 上月</div></div>' +
-    '<div class="kpi-card green"><div class="kpi-label">申报中标率</div><div class="kpi-value">75<span class="kpi-unit">%</span></div><div class="kpi-trend up">↑ 8% vs 上月</div></div>' +
-    '<div class="kpi-card orange"><div class="kpi-label">执行成功率</div><div class="kpi-value">96.2<span class="kpi-unit">%</span></div><div class="kpi-trend up">↑ 2.7% vs 上月</div></div>' +
-    '<div class="kpi-card purple"><div class="kpi-label">考核合格率</div><div class="kpi-value">96.2<span class="kpi-unit">%</span></div><div class="kpi-trend up">↑ 2.1% vs 上月</div></div>' +
-  '</div>' +
-  '<div class="grid-2">' +
-    '<div class="card">' +
-      '<div class="card-title">KPI趋势（近6月）</div>' +
-      '<div class="line-chart-wrap">' + lineChart({data:[
-            {label:'2月',val:68},{label:'3月',val:71},{label:'4月',val:73},
-            {label:'5月',val:72},{label:'6月',val:74},{label:'7月',val:77}
-          ],height:140,color1:'#1890ff',yMax:100,yMin:50,unit:'%avg'}) + '</div>' +
-    '</div>' +
-    '<div class="card">' +
-      '<div class="card-title">KPI目标达成</div>' +
-      '<table>' +
-        '<thead><tr><th>指标</th><th>目标</th><th>实际</th><th>达成</th></tr></thead>' +
-        '<tbody>' +
-          tr('资源在线率', '≥95%', '95.2%', tag('green','✓')) +
-          tr('申报中标率', '≥60%', '75%', tag('green','✓')) +
-          tr('执行成功率', '≥98%', '96.2%', tag('red','✗')) +
-          tr('考核合格率', '≥95%', '96.2%', tag('green','✓')) +
-          tr('单资源月均收益', '≥0.5万', '2.06万', tag('green','✓')) +
-        '</tbody>' +
-      '</table>' +
-    '</div>' +
-  '</div>';
-  return html;
-};
 
 // ==================== 功率分析 ====================
 PAGES['analysis-report'] = function() {
@@ -3123,11 +3043,11 @@ PAGES['analysis-report'] = function() {
       '<table>' +
         '<thead><tr><th>资源类型</th><th>数量</th><th>当前功率</th><th>占比</th><th>峰值时间</th></tr></thead>' +
         '<tbody>' +
-          tr(tag('purple','储能'), '12', '3.2 MW', '34%', '14:00') +
-          tr(tag('blue','充电站'), '9', '2.1 MW', '22%', '15:00') +
-          tr(tag('gray','工业负荷'), '8', '2.6 MW', '27%', '10:00') +
-          tr(tag('orange','楼宇空调'), '5', '1.2 MW', '13%', '14:00') +
-          tr(tag('green','光伏'), '8', '0.4 MWp', '4%', '12:00') +
+          tr(tag('purple','储能'), '18', '5.8 MW', '34%', '14:00') +
+          tr(tag('blue','充电站'), '12', '3.6 MW', '21%', '15:00') +
+          tr(tag('green','光伏'), '12', '2.8 MWp', '16%', '12:00') +
+          tr(tag('orange','楼宇空调'), '10', '1.8 MW', '11%', '14:00') +
+          tr(tag('gray','工业负荷'), '3', '3.2 MW', '18%', '10:00') +
         '</tbody>' +
       '</table>' +
     '</div>' +
@@ -3136,11 +3056,11 @@ PAGES['analysis-report'] = function() {
       '<table>' +
         '<thead><tr><th>资源名称</th><th>类型</th><th>当前功率</th><th>可调容量</th><th>状态</th></tr></thead>' +
         '<tbody>' +
-          tr('虹桥储能电站', tag('purple','储能'), '1.2 MW', '1.0 MW', tag('green','在线')) +
-          tr('浦东储能1号', tag('purple','储能'), '0.8 MW', '1.0 MW', tag('green','在线')) +
-          tr('虹桥充电站A', tag('blue','充电站'), '0.6 MW', '0.5 MW', tag('green','在线')) +
-          tr('虹桥商务区空调', tag('orange','空调'), '0.8 MW', '0.8 MW', tag('green','在线')) +
-          tr('金山工业负荷群', tag('gray','工业负荷'), '1.8 MW', '2.0 MW', tag('green','在线')) +
+          tr('长沙储能1号站', tag('purple','储能'), '1.2 MW', '1.0 MW', tag('green','在线')) +
+          tr('湘潭储能2号站', tag('purple','储能'), '0.8 MW', '1.0 MW', tag('green','在线')) +
+          tr('湘潭充电站A', tag('blue','充电站'), '0.6 MW', '0.5 MW', tag('green','在线')) +
+          tr('长沙楼宇空调群', tag('orange','空调'), '0.8 MW', '0.8 MW', tag('green','在线')) +
+          tr('衡阳工业负荷群', tag('gray','工业负荷'), '1.8 MW', '2.0 MW', tag('green','在线')) +
         '</tbody>' +
       '</table>' +
     '</div>' +
@@ -3169,28 +3089,28 @@ PAGES['analysis-cockpit'] = function() {
     '<div class="kpi-row" style="grid-template-columns:repeat(6,1fr);">' +
       '<div class="kpi-card blue">' +
         '<div class="kpi-label">聚合容量</div>' +
-        '<div class="kpi-value">12.8<span class="kpi-unit">MW</span></div>' +
-        '<div class="kpi-trend">可调 <b style="color:#52c41a;">21.0 MW</b></div>' +
+        '<div class="kpi-value">50.0<span class="kpi-unit">MW</span></div>' +
+        '<div class="kpi-trend">可调 <b style="color:#52c41a;">33.0 MW</b></div>' +
       '</div>' +
       '<div class="kpi-card green">' +
         '<div class="kpi-label">资源在线</div>' +
-        '<div class="kpi-value">40<span class="kpi-unit">/42</span></div>' +
-        '<div class="kpi-trend">在线率 95.2% | 告警 3</div>' +
+        '<div class="kpi-value">53<span class="kpi-unit">/55</span></div>' +
+        '<div class="kpi-trend">在线率 96.4% | 告警 2</div>' +
       '</div>' +
       '<div class="kpi-card orange">' +
         '<div class="kpi-label">今日收益</div>' +
-        '<div class="kpi-value">\u00a53.26<span class="kpi-unit">万</span></div>' +
-        '<div class="kpi-trend" style="color:#52c41a;">\u2191 8.2% vs 昨日</div>' +
+        '<div class="kpi-value">\u00a53.55<span class="kpi-unit">万</span></div>' +
+        '<div class="kpi-trend" style="color:#52c41a;">\u2191 6.8% vs 昨日</div>' +
       '</div>' +
       '<div class="kpi-card purple">' +
         '<div class="kpi-label">本月收益</div>' +
-        '<div class="kpi-value">\u00a586.4<span class="kpi-unit">万</span></div>' +
-        '<div class="kpi-trend">目标 \u00a5100万 | 达成 <b style="color:#faad14;">86%</b></div>' +
+        '<div class="kpi-value">\u00a594.6<span class="kpi-unit">万</span></div>' +
+        '<div class="kpi-trend">目标 \u00a595万 | 达成 <b style="color:#52c41a;">99.6%</b></div>' +
       '</div>' +
       '<div class="kpi-card cyan">' +
         '<div class="kpi-label">考核合格率</div>' +
-        '<div class="kpi-value">96.2<span class="kpi-unit">%</span></div>' +
-        '<div class="kpi-trend" style="color:#52c41a;">\u2191 2.1% vs 上月</div>' +
+        '<div class="kpi-value">97.5<span class="kpi-unit">%</span></div>' +
+        '<div class="kpi-trend" style="color:#52c41a;">\u2191 1.3% vs 上月</div>' +
       '</div>' +
       '<div class="kpi-card red">' +
         '<div class="kpi-label">待执行事件</div>' +
@@ -3204,7 +3124,7 @@ PAGES['analysis-cockpit'] = function() {
       // 左：资源分布地图（SVG）
       '<div class="card">' +
         '<div class="card-title">\u{1F4CD} 资源分布态势' +
-          '<span style="font-size:12px;color:rgba(255,255,255,0.4);margin-left:8px;font-weight:400;">上海区域</span>' +
+          '<span style="font-size:12px;color:rgba(255,255,255,0.4);margin-left:8px;font-weight:400;">长沙区域</span>' +
           '<span class="more" style="margin-left:auto;" onclick="navigate(\'resource-monitor\',\'\u8d44\u6e90\u7ba1\u7406\',\'\u5b9e\u65f6\u76d1\u63a7\')">实时监控 \u2192</span>' +
         '</div>' +
         '<svg class="cockpit-map-svg" viewBox="0 0 600 280" xmlns="http://www.w3.org/2000/svg">' +
@@ -3214,9 +3134,9 @@ PAGES['analysis-cockpit'] = function() {
           '<line x1="200" y1="50" x2="200" y2="240" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4,4"/>' +
           '<line x1="380" y1="45" x2="380" y2="245" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4,4"/>' +
           // 区域标签
-          '<text x="120" y="70" fill="rgba(255,255,255,0.3)" font-size="11">嘉定/闵行</text>' +
-          '<text x="270" y="65" fill="rgba(255,255,255,0.3)" font-size="11">市中心/虹桥</text>' +
-          '<text x="450" y="70" fill="rgba(255,255,255,0.3)" font-size="11">浦东新区</text>' +
+          '<text x="120" y="70" fill="rgba(255,255,255,0.3)" font-size="11">株洲/湘潭</text>' +
+          '<text x="270" y="65" fill="rgba(255,255,255,0.3)" font-size="11">长沙市中心</text>' +
+          '<text x="450" y="70" fill="rgba(255,255,255,0.3)" font-size="11">湘潭高新区</text>' +
           // 资源点位 - 储能(紫)
           '<circle cx="160" cy="120" r="6" fill="#722ed1" opacity="0.9"><animate attributeName="r" values="6;9;6" dur="2s" repeatCount="indefinite"/></circle>' +
           '<circle cx="280" cy="100" r="6" fill="#722ed1" opacity="0.9"/>' +
@@ -3244,7 +3164,7 @@ PAGES['analysis-cockpit'] = function() {
           '<g transform="translate(140,258)"><circle cx="0" cy="0" r="4" fill="#52c41a"/><text x="8" y="4" fill="rgba(255,255,255,0.5)" font-size="10">光伏</text></g>' +
           '<g transform="translate(190,258)"><circle cx="0" cy="0" r="4" fill="#faad14"/><text x="8" y="4" fill="rgba(255,255,255,0.5)" font-size="10">工业/空调</text></g>' +
           '<g transform="translate(270,258)"><circle cx="0" cy="0" r="5" fill="none" stroke="#ff4d4f" stroke-width="1.5"/><text x="8" y="4" fill="#ff4d4f" font-size="10">告警</text></g>' +
-          '<text x="520" y="262" fill="rgba(255,255,255,0.3)" font-size="10">42个资源点位</text>' +
+          '<text x="520" y="262" fill="rgba(255,255,255,0.3)" font-size="10">55个资源点位</text>' +
         '</svg>' +
       '</div>' +
       // 右：实时告警 TOP5
@@ -3252,10 +3172,10 @@ PAGES['analysis-cockpit'] = function() {
         '<div class="card-title">\u26a0 实时告警 TOP 5' +
           '<span class="more" style="margin-left:auto;" onclick="navigate(\'resource-monitor\',\'\u8d44\u6e90\u7ba1\u7406\',\'\u5b9e\u65f6\u76d1\u63a7\')">全部 \u2192</span>' +
         '</div>' +
-        '<div class="alarm-item"><div class="alarm-level critical"></div><div class="alarm-info"><div class="alarm-title">储能PCS通信中断</div><div class="alarm-meta">虹桥储能电站 | 3分钟前</div></div></div>' +
-        '<div class="alarm-item"><div class="alarm-level major"></div><div class="alarm-info"><div class="alarm-title">充电站功率超限 120%</div><div class="alarm-meta">虹桥充电站A | 12分钟前</div></div></div>' +
-        '<div class="alarm-item"><div class="alarm-level major"></div><div class="alarm-info"><div class="alarm-title">SOC低于下限阈值</div><div class="alarm-meta">浦东储能1号 SOC=8% | 28分钟前</div></div></div>' +
-        '<div class="alarm-item"><div class="alarm-level minor"></div><div class="alarm-info"><div class="alarm-title">光伏逆变器离线</div><div class="alarm-meta">虹桥中心光伏 | 45分钟前</div></div></div>' +
+        '<div class="alarm-item"><div class="alarm-level critical"></div><div class="alarm-info"><div class="alarm-title">储能PCS通信中断</div><div class="alarm-meta">长沙储能1号站 | 3分钟前</div></div></div>' +
+        '<div class="alarm-item"><div class="alarm-level major"></div><div class="alarm-info"><div class="alarm-title">充电站功率超限 120%</div><div class="alarm-meta">湘潭充电站A | 12分钟前</div></div></div>' +
+        '<div class="alarm-item"><div class="alarm-level major"></div><div class="alarm-info"><div class="alarm-title">SOC低于下限阈值</div><div class="alarm-meta">湘潭储能2号站 SOC=8% | 28分钟前</div></div></div>' +
+        '<div class="alarm-item"><div class="alarm-level minor"></div><div class="alarm-info"><div class="alarm-title">光伏逆变器离线</div><div class="alarm-meta">株洲光伏电站B | 45分钟前</div></div></div>' +
         '<div class="alarm-item"><div class="alarm-level minor"></div><div class="alarm-info"><div class="alarm-title">MQTT心跳超时</div><div class="alarm-meta">IoT设备 DEV-0023 | 1小时前</div></div></div>' +
       '</div>' +
     '</div>' +
@@ -3327,14 +3247,14 @@ PAGES['analysis-cockpit'] = function() {
           '<span class="more" style="margin-left:auto;" onclick="navigate(\'resource-enterprise\',\'\u8d44\u6e90\u7ba1\u7406\',\'\u4f01\u4e1a\u8d44\u6e90\u7ba1\u7406\')">详情 \u2192</span>' +
         '</div>' +
         '<div style="display:flex;flex-direction:column;gap:14px;">' +
-          '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#fff;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#722ed1;border-radius:2px;"></span><b>储能</b></div><span style="color:rgba(255,255,255,0.8);">12 个 (27%) | <b style="color:#fff;">8.0 MW</b></span></div><div style="height:10px;background:rgba(255,255,255,0.08);border-radius:5px;"><div style="width:27%;height:100%;background:#722ed1;border-radius:5px;"></div></div></div>' +
-          '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#fff;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#1890ff;border-radius:2px;"></span><b>充电站</b></div><span style="color:rgba(255,255,255,0.8);">9 个 (19%) | <b style="color:#fff;">3.2 MW</b></span></div><div style="height:10px;background:rgba(255,255,255,0.08);border-radius:5px;"><div style="width:19%;height:100%;background:#1890ff;border-radius:5px;"></div></div></div>' +
-          '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#fff;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#52c41a;border-radius:2px;"></span><b>光伏</b></div><span style="color:rgba(255,255,255,0.8);">8 个 (14%) | <b style="color:#fff;">1.8 MWp</b></span></div><div style="height:10px;background:rgba(255,255,255,0.08);border-radius:5px;"><div style="width:14%;height:100%;background:#52c41a;border-radius:5px;"></div></div></div>' +
-          '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#fff;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#faad14;border-radius:2px;"></span><b>楼宇空调</b></div><span style="color:rgba(255,255,255,0.8);">5 个 (10%) | <b style="color:#fff;">2.0 MW</b></span></div><div style="height:10px;background:rgba(255,255,255,0.08);border-radius:5px;"><div style="width:10%;height:100%;background:#faad14;border-radius:5px;"></div></div></div>' +
-          '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#fff;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#8c8c8c;border-radius:2px;"></span><b>工业负荷</b></div><span style="color:rgba(255,255,255,0.8);">8 个 (21%) | <b style="color:#fff;">6.0 MW</b></span></div><div style="height:10px;background:rgba(255,255,255,0.08);border-radius:5px;"><div style="width:21%;height:100%;background:#8c8c8c;border-radius:5px;"></div></div></div>' +
+          '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#fff;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#722ed1;border-radius:2px;"></span><b>储能</b></div><span style="color:rgba(255,255,255,0.8);">18 个 (34%) | <b style="color:#fff;">17.0 MW</b></span></div><div style="height:10px;background:rgba(255,255,255,0.08);border-radius:5px;"><div style="width:34%;height:100%;background:#722ed1;border-radius:5px;"></div></div></div>' +
+          '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#fff;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#1890ff;border-radius:2px;"></span><b>充电站</b></div><span style="color:rgba(255,255,255,0.8);">12 个 (30%) | <b style="color:#fff;">15.0 MW</b></span></div><div style="height:10px;background:rgba(255,255,255,0.08);border-radius:5px;"><div style="width:30%;height:100%;background:#1890ff;border-radius:5px;"></div></div></div>' +
+          '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#fff;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#52c41a;border-radius:2px;"></span><b>光伏</b></div><span style="color:rgba(255,255,255,0.8);">12 个 (20%) | <b style="color:#fff;">10.0 MWp</b></span></div><div style="height:10px;background:rgba(255,255,255,0.08);border-radius:5px;"><div style="width:20%;height:100%;background:#52c41a;border-radius:5px;"></div></div></div>' +
+          '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#fff;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#faad14;border-radius:2px;"></span><b>楼宇空调</b></div><span style="color:rgba(255,255,255,0.8);">10 个 (10%) | <b style="color:#fff;">5.0 MW</b></span></div><div style="height:10px;background:rgba(255,255,255,0.08);border-radius:5px;"><div style="width:10%;height:100%;background:#faad14;border-radius:5px;"></div></div></div>' +
+          '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#fff;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#8c8c8c;border-radius:2px;"></span><b>工业负荷</b></div><span style="color:rgba(255,255,255,0.8);">3 个 (6%) | <b style="color:#fff;">3.0 MW</b></span></div><div style="height:10px;background:rgba(255,255,255,0.08);border-radius:5px;"><div style="width:6%;height:100%;background:#8c8c8c;border-radius:5px;"></div></div></div>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">' +
-          '<div class="cockpit-mini-stat"><div class="v" style="color:#fff;">42</div><div class="l">资源总数</div></div>' +
+          '<div class="cockpit-mini-stat"><div class="v" style="color:#fff;">55</div><div class="l">资源总数</div></div>' +
           '<div class="cockpit-mini-stat"><div class="v" style="color:#52c41a;">40</div><div class="l">在线</div></div>' +
           '<div class="cockpit-mini-stat"><div class="v" style="color:#faad14;">2</div><div class="l">离线</div></div>' +
         '</div>' +
@@ -3352,7 +3272,7 @@ PAGES['analysis-cockpit'] = function() {
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:14px;">' +
           '<div style="color:rgba(255,255,255,0.5);">申报成功率 <span style="color:#52c41a;font-weight:600;">95.5%</span></div>' +
-          '<div style="color:rgba(255,255,255,0.5);">考核合格率 <span style="color:#52c41a;font-weight:600;">96.2%</span></div>' +
+          '<div style="color:rgba(255,255,255,0.5);">考核合格率 <span style="color:#52c41a;font-weight:600;">97.5%</span></div>' +
           '<div style="color:rgba(255,255,255,0.5);">DR削峰容量 <span style="color:#fff;font-weight:600;">5.0 MW</span></div>' +
           '<div style="color:rgba(255,255,255,0.5);">调频容量 <span style="color:#fff;font-weight:600;">3.0 MW</span></div>' +
         '</div>' +
@@ -3378,7 +3298,7 @@ PAGES['analysis-cockpit'] = function() {
       '<span style="color:rgba(255,255,255,0.2);">|</span>' +
       '<span>MQTT消息 12.3万条/分钟</span>' +
       '<span style="color:rgba(255,255,255,0.2);">|</span>' +
-      '<span>本月累计响应 15次</span>' +
+      '<span>本月累计响应 18次</span>' +
       '<span style="color:rgba(255,255,255,0.2);">|</span>' +
       '<span>累计减排 CO\u2082 186.5吨</span>' +
       '<span style="margin-left:auto;color:rgba(24,144,255,0.6);">虚拟电厂运营管理平台</span>' +
@@ -3398,10 +3318,10 @@ PAGES['system-qualification'] = function() {
     '</div>' +
     '<div class="tab-content active" id="qual-vpp">' +
       '<div class="detail-info-grid">' +
-        '<div class="detail-info-item"><div class="detail-info-label">VPP名称</div><div class="detail-info-value">上海XX虚拟电厂</div></div>' +
+        '<div class="detail-info-item"><div class="detail-info-label">VPP名称</div><div class="detail-info-value">长沙XX虚拟电厂</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">市场主体编码</div><div class="detail-info-value">VPP-2024-001</div></div>' +
-        '<div class="detail-info-item"><div class="detail-info-label">注册地</div><div class="detail-info-value">上海</div></div>' +
-        '<div class="detail-info-item"><div class="detail-info-label">聚合容量</div><div class="detail-info-value">12.8 MW</div></div>' +
+        '<div class="detail-info-item"><div class="detail-info-label">注册地</div><div class="detail-info-value">长沙</div></div>' +
+        '<div class="detail-info-item"><div class="detail-info-label">聚合容量</div><div class="detail-info-value">50.0 MW（可调 33.0 MW）</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">DR准入状态</div><div class="detail-info-value">' + tag('green','已准入') + '</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">调频准入状态</div><div class="detail-info-value">' + tag('green','已准入') + '</div></div>' +
         '<div class="detail-info-item"><div class="detail-info-label">备用准入状态</div><div class="detail-info-value">' + tag('green','已准入') + '</div></div>' +
@@ -3413,11 +3333,11 @@ PAGES['system-qualification'] = function() {
       '<table>' +
         '<thead><tr><th>资源名称</th><th>类型</th><th>容量</th><th>DR准入</th><th>调频准入</th><th>备用准入</th><th>操作</th></tr></thead>' +
         '<tbody>' +
-          tr('虹桥储能电站', tag('purple','储能'), '1 MW', tag('green','✓'), tag('green','✓'), tag('green','✓'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'system-qualification\',\'系统设置\',\'市场准入管理\')">详情</button>') +
-          tr('浦东储能1号', tag('purple','储能'), '1 MW', tag('green','✓'), tag('green','✓'), tag('green','✓'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'system-qualification\',\'系统设置\',\'市场准入管理\')">详情</button>') +
-          tr('虹桥充电站A', tag('blue','充电站'), '500 kW', tag('green','✓'), tag('gray','—'), tag('gray','—'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'system-qualification\',\'系统设置\',\'市场准入管理\')">详情</button>') +
-          tr('虹桥商务区空调', tag('orange','空调'), '800 kW', tag('green','✓'), tag('gray','—'), tag('gray','—'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'system-qualification\',\'系统设置\',\'市场准入管理\')">详情</button>') +
-          tr('虹桥中心光伏', tag('green','光伏'), '300 kWp', tag('green','✓'), tag('gray','—'), tag('gray','—'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'system-qualification\',\'系统设置\',\'市场准入管理\')">详情</button>') +
+          tr('长沙储能1号站', tag('purple','储能'), '1 MW', tag('green','✓'), tag('green','✓'), tag('green','✓'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'system-qualification\',\'系统设置\',\'市场准入管理\')">详情</button>') +
+          tr('湘潭储能2号站', tag('purple','储能'), '1 MW', tag('green','✓'), tag('green','✓'), tag('green','✓'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'system-qualification\',\'系统设置\',\'市场准入管理\')">详情</button>') +
+          tr('湘潭充电站A', tag('blue','充电站'), '500 kW', tag('green','✓'), tag('gray','—'), tag('gray','—'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'system-qualification\',\'系统设置\',\'市场准入管理\')">详情</button>') +
+          tr('长沙楼宇空调群', tag('orange','空调'), '800 kW', tag('green','✓'), tag('gray','—'), tag('gray','—'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'system-qualification\',\'系统设置\',\'市场准入管理\')">详情</button>') +
+          tr('株洲光伏电站B', tag('green','光伏'), '300 kWp', tag('green','✓'), tag('gray','—'), tag('gray','—'), '<button class="btn-link" onclick="navigateToDetail(\'resource-detail\',\'资源详情\',\'system-qualification\',\'系统设置\',\'市场准入管理\')">详情</button>') +
         '</tbody>' +
       '</table>' +
     '</div>' +
@@ -3487,7 +3407,7 @@ PAGES['system-config'] = function() {
         '<thead><tr><th>对接系统</th><th>集成方式</th><th>用途</th><th>状态</th><th>操作</th></tr></thead>' +
         '<tbody>' +
           tr('<strong>IoT物联网平台</strong>', 'MQTT 5.0 + REST API', '设备接入/数据采集/指令下发/物模型同步', tag('green','已连接'), '<button class="btn-link" onclick="navigate(\'resource-iot\',\'资源管理\',\'IoT平台管理\')">管理</button> <button class="btn-link" onclick="showActionModal(\'配置 - IoT物联网平台\',\'配置IoT平台的MQTT Broker地址、认证方式、Topic前缀、物模型映射规则等。实际系统将打开集成配置表单。\')">配置</button>') +
-          tr('电力市场交易平台', 'REST API（上海适配）', '申报提交、出清结果获取', tag('green','已连接'), '<button class="btn-link" onclick="showActionModal(\'配置 - 电力市场交易平台\',\'配置电力市场交易平台的API对接参数，包括接口地址、认证证书、报文格式等。实际系统将打开集成配置表单。\')">配置</button>') +
+          tr('电力市场交易平台', 'REST API（长沙适配）', '申报提交、出清结果获取', tag('green','已连接'), '<button class="btn-link" onclick="showActionModal(\'配置 - 电力市场交易平台\',\'配置电力市场交易平台的API对接参数，包括接口地址、认证证书、报文格式等。实际系统将打开集成配置表单。\')">配置</button>') +
           tr('电网调度系统', 'IEC 60870-5-104', '外部指令接收', tag('green','已连接'), '<button class="btn-link" onclick="showActionModal(\'配置 - 电网调度系统\',\'配置电网调度系统的IEC 60870-5-104协议参数，包括RTU地址、ASDU地址等。实际系统将打开集成配置表单。\')">配置</button>') +
           tr('AGC网关', '专用网关（秒级）', '调频AGC信号收发', tag('green','已连接'), '<button class="btn-link" onclick="showActionModal(\'配置 - AGC网关\',\'配置AGC网关的通信参数，包括信号周期、功率调节范围等。实际系统将打开集成配置表单。\')">配置</button>') +
           tr('气象服务', 'REST API', '辐照度/温度预测', tag('orange','未配置'), '<button class="btn-link" onclick="showActionModal(\'配置 - 气象服务\',\'配置气象服务API对接参数，用于光伏出力预测和楼宇空调负荷预测。实际系统将打开集成配置表单。\')">配置</button>') +
@@ -3512,8 +3432,8 @@ PAGES['system-config'] = function() {
       '<table>' +
         '<thead><tr><th>操作时间</th><th>用户</th><th>操作模块</th><th>操作内容</th><th>IP</th></tr></thead>' +
         '<tbody>' +
-          tr('2024-07-05 18:20:30', 'wangfang', '调控执行', '确认告警：虹桥充电站A功率偏差', '10.20.3.15') +
-          tr('2024-07-05 17:30:15', 'zhangming', '资源管理', '编辑企业信息：虹桥综合能源公司', '10.20.3.22') +
+          tr('2024-07-05 18:20:30', 'wangfang', '调控执行', '确认告警：湘潭充电站A功率偏差', '10.20.3.15') +
+          tr('2024-07-05 17:30:15', 'zhangming', '资源管理', '编辑企业信息：长沙综合能源公司', '10.20.3.22') +
           tr('2024-07-05 16:45:00', 'lihua', '市场交易', '创建申报：DEC-2024-064', '10.20.3.33') +
           tr('2024-07-05 14:00:20', 'admin', '系统设置', '修改结算规则：DR削峰容量价调整为22元/kW/次', '10.20.3.10') +
         '</tbody>' +
@@ -4117,9 +4037,7 @@ PAGES['iot-config-edit'] = function() {
   '<div class="card" style="margin-bottom:16px;">' +
     '<div class="card-title">MQTT Broker \u8fde\u63a5\u914d\u7f6e</div>' +
     '<div class="detail-info-grid">' +
-      '<div class="detail-info-item"><div class="detail-info-label">\u5e73\u53f0\u7c7b\u578b</div><div class="detail-info-value">' +
-        '<select class="select" style="width:100%;"><option>\u81ea\u5efaMQTT\u7269\u8054\u7f51\u5e73\u53f0</option><option>\u963f\u91cc\u4e91IoT</option><option>\u534e\u4e3a\u4e91IoT</option><option>\u6d77\u5c14\u4e91\u5b87</option></select>' +
-      '</div></div>' +
+      '<div class="detail-info-item"><div class="detail-info-label">\u5e73\u53f0\u7c7b\u578b</div><div class="detail-info-value">\u81ea\u5efaMQTT\u7269\u8054\u7f51\u5e73\u53f0</div></div>' +
       '<div class="detail-info-item"><div class="detail-info-label">MQTT Broker \u5730\u5740</div><div class="detail-info-value">' +
         '<input class="input" style="width:100%;" value="mqtt://10.20.1.100:1883">' +
       '</div></div>' +
@@ -4480,37 +4398,38 @@ console.log('pages-part3 loaded: ' + Object.keys(PAGES).length + ' pages');
 PAGES['resource-register'] = function() {
   var html = '' +
   '<div class="kpi-row">' +
-    '<div class="kpi-card blue"><div class="kpi-label">已注册资源</div><div class="kpi-value">42</div><div class="kpi-sub">较上周 +3</div></div>' +
-    '<div class="kpi-card green"><div class="kpi-label">已接入</div><div class="kpi-value">38</div><div class="kpi-sub">接入率 90.5%</div></div>' +
+    '<div class="kpi-card blue"><div class="kpi-label">已注册资源</div><div class="kpi-value">55</div><div class="kpi-sub">较上周 +5</div></div>' +
+    '<div class="kpi-card green"><div class="kpi-label">已接入</div><div class="kpi-value">53</div><div class="kpi-sub">接入率 96.4%</div></div>' +
     '<div class="kpi-card orange"><div class="kpi-label">审核中</div><div class="kpi-value">4</div><div class="kpi-sub">平均 1.5 天</div></div>' +
-    '<div class="kpi-card purple"><div class="kpi-label">总容量</div><div class="kpi-value">58 MW</div><div class="kpi-sub">目标 80 MW</div></div>' +
+    '<div class="kpi-card purple"><div class="kpi-label">总容量</div><div class="kpi-value">50 MW</div><div class="kpi-sub">目标 60 MW</div></div>' +
   '</div>' +
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">' +
     '<div class="card">' +
       '<div class="card-title">资源类型分布</div>' +
       '<div style="display:flex;flex-direction:column;gap:14px;">' +
-        '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#faad14;border-radius:2px;"></span><b>工业负荷</b></div><span style="color:var(--text-3);">22 个 (52%) | <b style="color:var(--text-1);">32 MW</b></span></div><div style="height:8px;background:var(--bg-2);border-radius:4px;"><div style="width:52%;height:100%;background:#faad14;border-radius:4px;"></div></div></div>' +
-        '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#722ed1;border-radius:2px;"></span><b>商业负荷</b></div><span style="color:var(--text-3);">12 个 (29%) | <b style="color:var(--text-1);">14 MW</b></span></div><div style="height:8px;background:var(--bg-2);border-radius:4px;"><div style="width:29%;height:100%;background:#722ed1;border-radius:4px;"></div></div></div>' +
-        '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#1890ff;border-radius:2px;"></span><b>充电桩</b></div><span style="color:var(--text-3);">6 个 (14%) | <b style="color:var(--text-1);">8 MW</b></span></div><div style="height:8px;background:var(--bg-2);border-radius:4px;"><div style="width:14%;height:100%;background:#1890ff;border-radius:4px;"></div></div></div>' +
-        '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#52c41a;border-radius:2px;"></span><b>储能</b></div><span style="color:var(--text-3);">2 个 (5%) | <b style="color:var(--text-1);">4 MW</b></span></div><div style="height:8px;background:var(--bg-2);border-radius:4px;"><div style="width:5%;height:100%;background:#52c41a;border-radius:4px;"></div></div></div>' +
+        '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#52c41a;border-radius:2px;"></span><b>储能</b></div><span style="color:var(--text-3);">18 个 (34%) | <b style="color:var(--text-1);">17 MW</b></span></div><div style="height:8px;background:var(--bg-2);border-radius:4px;"><div style="width:34%;height:100%;background:#52c41a;border-radius:4px;"></div></div></div>' +
+        '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#1890ff;border-radius:2px;"></span><b>充电站</b></div><span style="color:var(--text-3);">12 个 (30%) | <b style="color:var(--text-1);">15 MW</b></span></div><div style="height:8px;background:var(--bg-2);border-radius:4px;"><div style="width:30%;height:100%;background:#1890ff;border-radius:4px;"></div></div></div>' +
+        '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#faad14;border-radius:2px;"></span><b>光伏</b></div><span style="color:var(--text-3);">12 个 (20%) | <b style="color:var(--text-1);">10 MWp</b></span></div><div style="height:8px;background:var(--bg-2);border-radius:4px;"><div style="width:20%;height:100%;background:#faad14;border-radius:4px;"></div></div></div>' +
+        '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#722ed1;border-radius:2px;"></span><b>楼宇空调</b></div><span style="color:var(--text-3);">10 个 (10%) | <b style="color:var(--text-1);">5 MW</b></span></div><div style="height:8px;background:var(--bg-2);border-radius:4px;"><div style="width:10%;height:100%;background:#722ed1;border-radius:4px;"></div></div></div>' +
+        '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:10px;height:10px;background:#8c8c8c;border-radius:2px;"></span><b>工业负荷</b></div><span style="color:var(--text-3);">3 个 (6%) | <b style="color:var(--text-1);">3 MW</b></span></div><div style="height:8px;background:var(--bg-2);border-radius:4px;"><div style="width:6%;height:100%;background:#8c8c8c;border-radius:4px;"></div></div></div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">' +
-        '<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--text-1);">42</div><div style="font-size:11px;color:var(--text-3);">资源总数</div></div>' +
-        '<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--success);">58</div><div style="font-size:11px;color:var(--text-3);">总容量(MW)</div></div>' +
-        '<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--primary);">4</div><div style="font-size:11px;color:var(--text-3);">资源类型</div></div>' +
+        '<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--text-1);">55</div><div style="font-size:11px;color:var(--text-3);">资源总数</div></div>' +
+        '<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--success);">50</div><div style="font-size:11px;color:var(--text-3);">总容量(MW)</div></div>' +
+        '<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--primary);">5</div><div style="font-size:11px;color:var(--text-3);">资源类型</div></div>' +
       '</div>' +
     '</div>' +
     '<div class="card">' +
       '<div class="card-title">接入进度概览</div>' +
       '<div style="display:flex;flex-direction:column;gap:14px;">' +
-        '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span>合同签署</span><span style="color:var(--text-3);"><b style="color:var(--text-1);">38</b> / 42</span></div><div style="height:8px;background:var(--bg-2);border-radius:4px;"><div style="width:90%;height:100%;background:var(--success);border-radius:4px;"></div></div></div>' +
+        '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span>合同签署</span><span style="color:var(--text-3);"><b style="color:var(--text-1);">52</b> / 55</span></div><div style="height:8px;background:var(--bg-2);border-radius:4px;"><div style="width:90%;height:100%;background:var(--success);border-radius:4px;"></div></div></div>' +
         '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span>IoT 在线</span><span style="color:var(--text-3);"><b style="color:var(--text-1);">36</b> / 38</span></div><div style="height:8px;background:var(--bg-2);border-radius:4px;"><div style="width:95%;height:100%;background:var(--primary);border-radius:4px;"></div></div></div>' +
         '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span>指令可控</span><span style="color:var(--text-3);"><b style="color:var(--text-1);">35</b> / 38</span></div><div style="height:8px;background:var(--bg-2);border-radius:4px;"><div style="width:92%;height:100%;background:#722ed1;border-radius:4px;"></div></div></div>' +
         '<div><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span>基线建模</span><span style="color:var(--text-3);"><b style="color:var(--text-1);">35</b> / 38</span></div><div style="height:8px;background:var(--bg-2);border-radius:4px;"><div style="width:92%;height:100%;background:#13c2c2;border-radius:4px;"></div></div></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">' +
         '<div style="flex:1;background:var(--primary-light);padding:10px;border-radius:6px;text-align:center;"><div style="font-size:22px;font-weight:700;color:var(--primary);">5</div><div style="font-size:11px;color:var(--text-3);">本月新增</div></div>' +
-        '<div style="flex:1;background:#f6ffed;padding:10px;border-radius:6px;text-align:center;"><div style="font-size:22px;font-weight:700;color:var(--success);">90.5%</div><div style="font-size:11px;color:var(--text-3);">接入率</div></div>' +
+        '<div style="flex:1;background:#f6ffed;padding:10px;border-radius:6px;text-align:center;"><div style="font-size:22px;font-weight:700;color:var(--success);">96.4%</div><div style="font-size:11px;color:var(--text-3);">接入率</div></div>' +
       '</div>' +
     '</div>' +
   '</div>' +
@@ -4529,13 +4448,13 @@ PAGES['resource-register'] = function() {
     '<table class="data-table">' +
       '<thead><tr><th>资源名称</th><th>所属企业</th><th>资源类型</th><th>额定功率</th><th>可调容量</th><th>通信协议</th><th>接入阶段</th><th>提交时间</th><th>操作</th></tr></thead>' +
       '<tbody>' +
-        tr('金山充电站C', '嘉定新能源', tag('blue','充电桩'), '360 kW', '200 kW', 'OCPP 2.0', tag('blue','物模型同步'), '2024-07-10', '<button class="btn-link" onclick="navigateToDetail(\'resource-register-detail\',\'资源注册详情\',\'resource-register\',\'资源管理\',\'资源接入注册\')">查看</button>') +
-        tr('湖南有色冶炼厂', '湖南有色金属集团', tag('orange','工业负荷'), '2000 kW', '800 kW', 'IEC 61850', tag('green','已激活'), '2024-07-08', '<button class="btn-link" onclick="navigateToDetail(\'resource-register-detail\',\'资源注册详情\',\'resource-register\',\'资源管理\',\'资源接入注册\')">查看</button>') +
-        tr('长沙商业综合体A', '长沙万达广场', tag('purple','商业负荷'), '1500 kW', '500 kW', 'Modbus TCP', tag('green','已激活'), '2024-07-05', '<button class="btn-link" onclick="navigateToDetail(\'resource-register-detail\',\'资源注册详情\',\'resource-register\',\'资源管理\',\'资源接入注册\')">查看</button>') +
-        tr('湘潭光伏储能站', '湘潭新能源科技', tag('green','储能'), '500 kW', '500 kW', 'MQTT', tag('orange','能力校核'), '2024-07-12', '<button class="btn-link" onclick="navigateToDetail(\'resource-register-detail\',\'资源注册详情\',\'resource-register\',\'资源管理\',\'资源接入注册\')">查看</button>') +
-        tr('株洲工业空调群', '株洲汽车制造', tag('orange','工业负荷'), '800 kW', '300 kW', 'OPC UA', tag('blue','物模型同步'), '2024-07-11', '<button class="btn-link" onclick="navigateToDetail(\'resource-register-detail\',\'资源注册详情\',\'resource-register\',\'资源管理\',\'资源接入注册\')">查看</button>') +
-        tr('衡阳冷库群', '衡阳冷链物流', tag('orange','工业负荷'), '600 kW', '250 kW', 'MQTT', tag('green','已激活'), '2024-07-03', '<button class="btn-link" onclick="navigateToDetail(\'resource-register-detail\',\'资源注册详情\',\'resource-register\',\'资源管理\',\'资源接入注册\')">查看</button>') +
-        tr('常德楼宇负荷', '常德置业', tag('purple','商业负荷'), '400 kW', '150 kW', 'BACnet', tag('orange','能力校核'), '2024-07-09', '<button class="btn-link" onclick="navigateToDetail(\'resource-register-detail\',\'资源注册详情\',\'resource-register\',\'资源管理\',\'资源接入注册\')">查看</button>') +
+        tr('长沙储能1号站', '长沙新能源科技', tag('green','储能'), '1000 kW', '1000 kW', 'IEC 61850', tag('orange','能力校核'), '2024-07-12', '<button class="btn-link" onclick="navigateToDetail(\'resource-register-detail\',\'资源注册详情\',\'resource-register\',\'资源管理\',\'资源接入注册\')">查看</button>') +
+        tr('湘潭充电站A', '湘潭交投集团', tag('blue','充电站'), '1200 kW', '600 kW', 'OCPP 2.0', tag('green','已激活'), '2024-07-08', '<button class="btn-link" onclick="navigateToDetail(\'resource-register-detail\',\'资源注册详情\',\'resource-register\',\'资源管理\',\'资源接入注册\')">查看</button>') +
+        tr('株洲光伏电站B', '株洲绿能电力', tag('orange','光伏'), '800 kW', '400 kW', 'Modbus TCP', tag('blue','物模型同步'), '2024-07-11', '<button class="btn-link" onclick="navigateToDetail(\'resource-register-detail\',\'资源注册详情\',\'resource-register\',\'资源管理\',\'资源接入注册\')">查看</button>') +
+        tr('长沙楼宇空调群', '长沙万达广场', tag('purple','楼宇空调'), '500 kW', '200 kW', 'BACnet', tag('green','已激活'), '2024-07-05', '<button class="btn-link" onclick="navigateToDetail(\'resource-register-detail\',\'资源注册详情\',\'resource-register\',\'资源管理\',\'资源接入注册\')">查看</button>') +
+        tr('衡阳特钢', '衡阳特钢集团', tag('gray','工业负荷'), '1000 kW', '500 kW', 'OPC UA', tag('blue','物模型同步'), '2024-07-10', '<button class="btn-link" onclick="navigateToDetail(\'resource-register-detail\',\'资源注册详情\',\'resource-register\',\'资源管理\',\'资源接入注册\')">查看</button>') +
+        tr('湘潭储能2号站', '湘潭新能源科技', tag('green','储能'), '1000 kW', '1000 kW', 'IEC 61850', tag('green','已激活'), '2024-07-03', '<button class="btn-link" onclick="navigateToDetail(\'resource-register-detail\',\'资源注册详情\',\'resource-register\',\'资源管理\',\'资源接入注册\')">查看</button>') +
+        tr('常德充电站C', '常德城投', tag('blue','充电站'), '1200 kW', '600 kW', 'OCPP 2.0', tag('orange','能力校核'), '2024-07-09', '<button class="btn-link" onclick="navigateToDetail(\'resource-register-detail\',\'资源注册详情\',\'resource-register\',\'资源管理\',\'资源接入注册\')">查看</button>') +
       '</tbody>' +
     '</table>' +
   '</div>';
@@ -4546,27 +4465,27 @@ PAGES['resource-register'] = function() {
 PAGES['baseline-modeling'] = function() {
   var html = '' +
   '<div class="kpi-row">' +
-    '<div class="kpi-card blue"><div class="kpi-label">已建模资源</div><div class="kpi-value">38</div><div class="kpi-sub">建模率 90.5%</div></div>' +
-    '<div class="kpi-card green"><div class="kpi-label">基线审核通过</div><div class="kpi-value">35</div><div class="kpi-sub">通过率 92.1%</div></div>' +
+    '<div class="kpi-card blue"><div class="kpi-label">已建模资源</div><div class="kpi-value">53</div><div class="kpi-sub">建模率 96.4%</div></div>' +
+    '<div class="kpi-card green"><div class="kpi-label">基线审核通过</div><div class="kpi-value">51</div><div class="kpi-sub">通过率 96.2%</div></div>' +
     '<div class="kpi-card orange"><div class="kpi-label">待审核</div><div class="kpi-value">3</div><div class="kpi-sub">平均 0.5 天</div></div>' +
     '<div class="kpi-card purple"><div class="kpi-label">平均精度</div><div class="kpi-value">96.2%</div><div class="kpi-sub">MAPE ≤ 5%</div></div>' +
   '</div>' +
   '<div class="card">' +
-    '<div class="card-title">基线建模概览 <span class="more" onclick="showActionModal(\'基线建模说明\',\'基线建模采用历史负荷数据，通过平均基线法、可比日基线法等算法，生成资源在非响应时段的基线负荷曲线，作为响应效果评估和结算的基准。\')">基线算法说明</span></div>' +
+    '<div class="card-title">基线建模概览 <span class="more" onclick="showActionModal(\'基线建模说明\',\'采用5+1基线算法体系：\\n1. 平均基线法（商业/楼宇负荷）\\n2. 可比日基线法（工业负荷）\\n3. 回归基线法（光伏/工业负荷）\\n4. 天气修正法（光伏/充电站）\\n5. 储能SOE轨迹法（储能专有，基于SOC充放电轨迹）\\n+1. 充电行为法（充电站专有，基于充电行为画像）\\n储能无自然负荷基线，充电站负荷高度随机，需专有算法。\')">基线算法说明（5+1体系）</span></div>' +
     '<table class="data-table">' +
       '<thead><tr><th>资源名称</th><th>资源类型</th><th>建模方法</th><th>训练数据</th><th>基线精度(MAPE)</th><th>状态</th><th>最近更新</th><th>操作</th></tr></thead>' +
       '<tbody>' +
-        tr('湖南有色冶炼厂', tag('orange','工业负荷'), '可比日基线法', '90天/15min', '3.2%', tag('green','已审核'), '2024-07-10', '<button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-detail\',\'基线建模详情\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">查看</button> <button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-rebuild\',\'重新建模\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">重新建模</button>') +
-        tr('长沙商业综合体A', tag('purple','商业负荷'), '平均基线法', '60天/15min', '4.5%', tag('green','已审核'), '2024-07-08', '<button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-detail\',\'基线建模详情\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">查看</button> <button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-rebuild\',\'重新建模\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">重新建模</button>') +
-        tr('衡阳冷库群', tag('orange','工业负荷'), '可比日基线法', '90天/15min', '2.8%', tag('green','已审核'), '2024-07-06', '<button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-detail\',\'基线建模详情\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">查看</button> <button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-rebuild\',\'重新建模\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">重新建模</button>') +
-        tr('湘潭光伏储能站', tag('green','储能'), 'SOE基线法', '30天/5min', '5.1%', tag('orange','待审核'), '2024-07-12', '<button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-detail\',\'基线建模详情\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">查看</button> <button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-submit\',\'提交审核\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">提交审核</button>') +
-        tr('株洲工业空调群', tag('orange','工业负荷'), '回归基线法', '60天/15min', '4.2%', tag('orange','待审核'), '2024-07-11', '<button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-detail\',\'基线建模详情\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">查看</button> <button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-submit\',\'提交审核\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">提交审核</button>') +
-        tr('常德楼宇负荷', tag('purple','商业负荷'), '平均基线法', '45天/15min', '6.8%', tag('red','需重建模'), '2024-07-09', '<button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-detail\',\'基线建模详情\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">查看</button> <button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-rebuild\',\'重新建模\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">重新建模</button>') +
+        tr('衡阳特钢', tag('gray','工业负荷'), '可比日基线法', '90天/15min', '3.2%', tag('green','已审核'), '2024-07-10', '<button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-detail\',\'基线建模详情\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">查看</button> <button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-rebuild\',\'重新建模\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">重新建模</button>') +
+        tr('长沙楼宇空调群', tag('purple','楼宇空调'), '平均基线法', '60天/15min', '4.5%', tag('green','已审核'), '2024-07-08', '<button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-detail\',\'基线建模详情\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">查看</button> <button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-rebuild\',\'重新建模\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">重新建模</button>') +
+        tr('长沙储能1号站', tag('green','储能'), 'SOE轨迹法', '30天/5min', '5.1%', tag('orange','待审核'), '2024-07-12', '<button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-detail\',\'基线建模详情\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">查看</button> <button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-submit\',\'提交审核\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">提交审核</button>') +
+        tr('湘潭充电站A', tag('blue','充电站'), '充电行为法', '60天/5min', '6.8%', tag('red','需重建模'), '2024-07-09', '<button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-detail\',\'基线建模详情\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">查看</button> <button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-rebuild\',\'重新建模\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">重新建模</button>') +
+        tr('株洲光伏电站B', tag('orange','光伏'), '天气修正法', '90天/15min', '4.2%', tag('orange','待审核'), '2024-07-11', '<button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-detail\',\'基线建模详情\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">查看</button> <button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-submit\',\'提交审核\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">提交审核</button>') +
+        tr('湘潭储能2号站', tag('green','储能'), 'SOE轨迹法', '30天/5min', '2.8%', tag('green','已审核'), '2024-07-06', '<button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-detail\',\'基线建模详情\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">查看</button> <button class="btn-link" onclick="navigateToDetail(\'baseline-modeling-rebuild\',\'重新建模\',\'baseline-modeling\',\'基线管理\',\'基线建模\')">重新建模</button>') +
       '</tbody>' +
     '</table>' +
   '</div>' +
   '<div class="card">' +
-    '<div class="card-title">基线负荷曲线示例 — 湖南有色冶炼厂</div>' +
+    '<div class="card-title">基线负荷曲线示例 — 衡阳特钢</div>' +
     '<div style="background:var(--bg-2);padding:16px;border-radius:6px;">' +
       '<div style="display:flex;gap:24px;margin-bottom:12px;font-size:12px;">' +
         '<span><span style="display:inline-block;width:12px;height:3px;background:#1890ff;margin-right:6px;"></span>基线负荷</span>' +
@@ -4579,7 +4498,7 @@ PAGES['baseline-modeling'] = function() {
         width: 760, height: 220, color1: '#1890ff', color2: '#52c41a', yLabel: 'kW', unit: 'kW'
       }) +
     '</div>' +
-    '<div style="margin-top:12px;font-size:12px;color:var(--text-3);">注：10:00-14:00 为响应时段，实际负荷（绿线）显著低于基线负荷（蓝线），响应量约 650 kW，基线精度 MAPE = 3.2%</div>' +
+    '<div style="margin-top:12px;font-size:12px;color:var(--text-3);">注：10:00-14:00 为响应时段，实际负荷（绿线）显著低于基线负荷（蓝线），响应量约 650 kW，基线精度 MAPE = 3.2%。衡阳特钢采用可比日基线法。</div>' +
   '</div>';
   return html;
 };
@@ -4589,7 +4508,7 @@ PAGES['control-demand-response'] = function() {
   var html = '' +
   '<div class="kpi-row">' +
     '<div class="kpi-card blue"><div class="kpi-label">本月响应次数</div><div class="kpi-value">8</div><div class="kpi-sub">计划6 + 临时2</div></div>' +
-    '<div class="kpi-card green"><div class="kpi-label">响应达成率</div><div class="kpi-value">96.2%</div><div class="kpi-sub">目标 ≥ 95%</div></div>' +
+    '<div class="kpi-card green"><div class="kpi-label">响应达成率</div><div class="kpi-value">97.5%</div><div class="kpi-sub">目标 ≥ 95%</div></div>' +
     '<div class="kpi-card orange"><div class="kpi-label">平均响应速度</div><div class="kpi-value">3.2 min</div><div class="kpi-sub">指令到执行</div></div>' +
     '<div class="kpi-card purple"><div class="kpi-label">累计响应量</div><div class="kpi-value">4.2 MWh</div><div class="kpi-sub">本月</div></div>' +
   '</div>' +
@@ -4641,13 +4560,13 @@ PAGES['control-demand-response'] = function() {
 PAGES['storage-management'] = function() {
   var html = '' +
   '<div class="kpi-row">' +
-    '<div class="kpi-card blue"><div class="kpi-label">储能站点</div><div class="kpi-value">8</div><div class="kpi-sub">总容量 12 MWh</div></div>' +
-    '<div class="kpi-card green"><div class="kpi-label">平均SOC</div><div class="kpi-value">68%</div><div class="kpi-sub">可用 8.2 MWh</div></div>' +
+    '<div class="kpi-card blue"><div class="kpi-label">储能站点</div><div class="kpi-value">18</div><div class="kpi-sub">总容量 34 MWh</div></div>' +
+    '<div class="kpi-card green"><div class="kpi-label">平均SOC</div><div class="kpi-value">68%</div><div class="kpi-sub">可用 23.1 MWh</div></div>' +
     '<div class="kpi-card orange"><div class="kpi-label">充放电次数</div><div class="kpi-value">156</div><div class="kpi-sub">本月</div></div>' +
-    '<div class="kpi-card purple"><div class="kpi-label">累计收益</div><div class="kpi-value">¥12.5万</div><div class="kpi-sub">本月峰谷套利</div></div>' +
+    '<div class="kpi-card purple"><div class="kpi-label">累计收益</div><div class="kpi-value">\u00a535.2\u4e07</div><div class="kpi-sub">本月峰谷套利+调频</div></div>' +
   '</div>' +
   '<div class="card">' +
-    '<div class="card-title">储能站点列表 <span style="margin-left:auto;font-size:12px;color:var(--text-3);">二阶段功能 — 储能系统接入与管理</span></div>' +
+    '<div class="card-title">储能站点列表 <span style="margin-left:auto;font-size:12px;color:var(--text-3);">储能系统接入与管理</span></div>' +
     '<table class="data-table">' +
       '<thead><tr><th>站点名称</th><th>额定功率</th><th>额定容量</th><th>当前SOC</th><th>运行状态</th><th>今日充放电</th><th>累计收益</th><th>操作</th></tr></thead>' +
       '<tbody>' +
@@ -4672,13 +4591,13 @@ PAGES['storage-management'] = function() {
 PAGES['pv-management'] = function() {
   var html = '' +
   '<div class="kpi-row">' +
-    '<div class="kpi-card blue"><div class="kpi-label">光伏站点</div><div class="kpi-value">15</div><div class="kpi-sub">总装机 8.5 MW</div></div>' +
-    '<div class="kpi-card green"><div class="kpi-label">当前出力</div><div class="kpi-value">5.2 MW</div><div class="kpi-sub">利用率 61.2%</div></div>' +
-    '<div class="kpi-card orange"><div class="kpi-label">今日发电量</div><div class="kpi-value">32 MWh</div><div class="kpi-sub">预计全天 45 MWh</div></div>' +
-    '<div class="kpi-card purple"><div class="kpi-label">月发电量</div><div class="kpi-value">860 MWh</div><div class="kpi-sub">同比 +12%</div></div>' +
+    '<div class="kpi-card blue"><div class="kpi-label">光伏站点</div><div class="kpi-value">12</div><div class="kpi-sub">总装机 10.0 MWp</div></div>' +
+    '<div class="kpi-card green"><div class="kpi-label">当前出力</div><div class="kpi-value">6.2 MW</div><div class="kpi-sub">利用率 62.0%</div></div>' +
+    '<div class="kpi-card orange"><div class="kpi-label">今日发电量</div><div class="kpi-value">38 MWh</div><div class="kpi-sub">预计全天 52 MWh</div></div>' +
+    '<div class="kpi-card purple"><div class="kpi-label">月发电量</div><div class="kpi-value">1,020 MWh</div><div class="kpi-sub">同比 +12%</div></div>' +
   '</div>' +
   '<div class="card">' +
-    '<div class="card-title">光伏站点列表 <span style="margin-left:auto;font-size:12px;color:var(--text-3);">二阶段功能 — 分布式光伏接入与监控</span></div>' +
+    '<div class="card-title">光伏站点列表 <span style="margin-left:auto;font-size:12px;color:var(--text-3);">分布式光伏接入与监控</span></div>' +
     '<table class="data-table">' +
       '<thead><tr><th>站点名称</th><th>装机容量</th><th>当前出力</th><th>今日发电</th><th>逆变器状态</th><th>辐照度</th><th>操作</th></tr></thead>' +
       '<tbody>' +
@@ -4691,242 +4610,6 @@ PAGES['pv-management'] = function() {
   return html;
 };
 
-// ---- 现货市场（二阶段） ----
-PAGES['market-spot'] = function() {
-  var html = '' +
-  '<div class="kpi-row">' +
-    '<div class="kpi-card blue"><div class="kpi-label">日前均价</div><div class="kpi-value">¥0.38</div><div class="kpi-sub">元/kWh</div></div>' +
-    '<div class="kpi-card green"><div class="kpi-label">实时均价</div><div class="kpi-value">¥0.42</div><div class="kpi-sub">元/kWh</div></div>' +
-    '<div class="kpi-card orange"><div class="kpi-label">今日申报</div><div class="kpi-value">15 MW</div><div class="kpi-sub">日前市场</div></div>' +
-    '<div class="kpi-card purple"><div class="kpi-label">预计收益</div><div class="kpi-value">¥2.8万</div><div class="kpi-sub">今日</div></div>' +
-  '</div>' +
-  '<div class="card">' +
-    '<div class="card-title">现货市场价格曲线 <span style="margin-left:auto;font-size:12px;color:var(--text-3);">二阶段功能 — 现货市场交易</span></div>' +
-    lineChart({
-      data: [{label:'00:00',val:0.28},{label:'02:00',val:0.25},{label:'04:00',val:0.26},{label:'06:00',val:0.32},{label:'08:00',val:0.45},{label:'10:00',val:0.52},{label:'12:00',val:0.48},{label:'14:00',val:0.55},{label:'16:00',val:0.62},{label:'18:00',val:0.78},{label:'20:00',val:0.68},{label:'22:00',val:0.42}],
-      data2: [{label:'00:00',val:0.30},{label:'02:00',val:0.27},{label:'04:00',val:0.28},{label:'06:00',val:0.35},{label:'08:00',val:0.48},{label:'10:00',val:0.55},{label:'12:00',val:0.50},{label:'14:00',val:0.58},{label:'16:00',val:0.65},{label:'18:00',val:0.82},{label:'20:00',val:0.72},{label:'22:00',val:0.45}],
-      width: 760, height: 220, color1: '#1890ff', color2: '#ff4d4f', yLabel: '元/kWh', unit: '元/kWh'
-    }) +
-    '<div style="margin-top:8px;font-size:12px;color:var(--text-3);">蓝线：日前价格 | 红线：实时价格 | 18:00为晚高峰尖峰时段</div>' +
-  '</div>' +
-  '<div class="card">' +
-    '<div class="card-title">现货申报策略</div>' +
-    '<table class="data-table">' +
-      '<thead><tr><th>时段</th><th>类型</th><th>申报量</th><th>申报价格</th><th>出清价格</th><th>状态</th></tr></thead>' +
-      '<tbody>' +
-        tr('08:00-12:00', '日前-售电', '8 MW', '0.45 元/kWh', '0.48 元/kWh', tag('green','已出清')) +
-        tr('12:00-16:00', '日前-售电', '5 MW', '0.52 元/kWh', '0.55 元/kWh', tag('green','已出清')) +
-        tr('16:00-20:00', '日前-售电', '12 MW', '0.65 元/kWh', '0.68 元/kWh', tag('green','已出清')) +
-        tr('20:00-24:00', '日前-购电', '3 MW', '0.35 元/kWh', '0.42 元/kWh', tag('orange','部分出清')) +
-      '</tbody>' +
-    '</table>' +
-  '</div>';
-  return html;
-};
-
-// ---- 负荷预测（二阶段） ----
-PAGES['analysis-forecast'] = function() {
-  var html = '' +
-  '<div class="kpi-row">' +
-    '<div class="kpi-card blue"><div class="kpi-label">明日预测峰值</div><div class="kpi-value">52 MW</div><div class="kpi-sub">18:00-20:00</div></div>' +
-    '<div class="kpi-card green"><div class="kpi-label">预测精度</div><div class="kpi-value">94.5%</div><div class="kpi-sub">7日MAPE</div></div>' +
-    '<div class="kpi-card orange"><div class="kpi-label">可调潜力</div><div class="kpi-value">18 MW</div><div class="kpi-sub">峰值时段</div></div>' +
-    '<div class="kpi-card purple"><div class="kpi-label">置信度</div><div class="kpi-value">92%</div><div class="kpi-sub">P95区间</div></div>' +
-  '</div>' +
-  '<div class="card">' +
-    '<div class="card-title">负荷预测曲线 <span style="margin-left:auto;font-size:12px;color:var(--text-3);">二阶段功能 — AI负荷预测分析</span></div>' +
-    lineChart({
-      data: [{label:'00:00',val:28},{label:'02:00',val:25},{label:'04:00',val:26},{label:'06:00',val:30},{label:'08:00',val:38},{label:'10:00',val:45},{label:'12:00',val:42},{label:'14:00',val:46},{label:'16:00',val:48},{label:'18:00',val:52},{label:'20:00',val:50},{label:'22:00',val:38}],
-      data2: [{label:'00:00',val:29},{label:'02:00',val:24},{label:'04:00',val:27},{label:'06:00',val:31},{label:'08:00',val:37},{label:'10:00',val:44},{label:'12:00',val:43},{label:'14:00',val:47},{label:'16:00',val:49},{label:'18:00',val:51},{label:'20:00',val:49},{label:'22:00',val:39}],
-      width: 760, height: 220, color1: '#1890ff', color2: '#52c41a', yLabel: 'MW', unit: 'MW', fillArea: true
-    }) +
-    '<div style="margin-top:8px;font-size:12px;color:var(--text-3);">蓝线：预测负荷 | 绿线：实际负荷 | 18:00-20:00为预测峰值时段</div>' +
-  '</div>';
-  return html;
-};
-
-// ---- 多VPP协同（三阶段） ----
-PAGES['vpp-coordination'] = function() {
-  var html = '' +
-  '<div class="kpi-row">' +
-    '<div class="kpi-card blue"><div class="kpi-label">协同VPP</div><div class="kpi-value">5</div><div class="kpi-sub">湖南/湖北/江西</div></div>' +
-    '<div class="kpi-card green"><div class="kpi-label">总聚合容量</div><div class="kpi-value">320 MW</div><div class="kpi-sub">跨省调度</div></div>' +
-    '<div class="kpi-card orange"><div class="kpi-label">本月协同次数</div><div class="kpi-value">12</div><div class="kpi-sub">跨区调度</div></div>' +
-    '<div class="kpi-card purple"><div class="kpi-label">协同收益</div><div class="kpi-value">¥85万</div><div class="kpi-sub">本月</div></div>' +
-  '</div>' +
-  '<div class="card">' +
-    '<div class="card-title">VPP协同概览 <span style="margin-left:auto;font-size:12px;color:var(--text-3);">三阶段功能 — 多VPP跨区协同调度</span></div>' +
-    '<table class="data-table">' +
-      '<thead><tr><th>VPP名称</th><th>所在区域</th><th>聚合容量</th><th>资源数</th><th>当前出力</th><th>可调潜力</th><th>状态</th><th>操作</th></tr></thead>' +
-      '<tbody>' +
-        tr('湖南VPP（本节点）', '湖南长沙', '58 MW', '42', '45 MW', '18 MW', tag('green','运行中'), '<a onclick="showActionModal(\'VPP详情\',\'查看本节点VPP详情。\')">详情</a>') +
-        tr('湖北VPP', '湖北武汉', '85 MW', '56', '68 MW', '25 MW', tag('green','运行中'), '<a onclick="showActionModal(\'VPP详情\',\'查看协同VPP详情。\')">详情</a>') +
-        tr('江西VPP', '江西南昌', '62 MW', '38', '48 MW', '20 MW', tag('green','运行中'), '<a onclick="showActionModal(\'VPP详情\',\'查看协同VPP详情。\')">详情</a>') +
-        tr('湖南VPP-2', '湖南株洲', '45 MW', '28', '35 MW', '15 MW', tag('blue','待协同'), '<a onclick="showActionModal(\'VPP详情\',\'查看协同VPP详情。\')">详情</a>') +
-        tr('湖北VPP-2', '湖北宜昌', '70 MW', '44', '52 MW', '22 MW', tag('green','运行中'), '<a onclick="showActionModal(\'VPP详情\',\'查看协同VPP详情。\')">详情</a>') +
-      '</tbody>' +
-    '</table>' +
-  '</div>';
-  return html;
-};
-
-// ---- 碳排放交易（三阶段） ----
-PAGES['market-carbon'] = function() {
-  var html = '' +
-  '<div class="kpi-row">' +
-    '<div class="kpi-card green"><div class="kpi-label">碳配额</div><div class="kpi-value">12,500</div><div class="kpi-sub">tCO₂</div></div>' +
-    '<div class="kpi-card blue"><div class="kpi-label">已用配额</div><div class="kpi-value">8,200</div><div class="kpi-sub">tCO₂</div></div>' +
-    '<div class="kpi-card orange"><div class="kpi-label">可交易CCER</div><div class="kpi-value">3,800</div><div class="kpi-sub">tCO₂</div></div>' +
-    '<div class="kpi-card purple"><div class="kpi-label">碳价</div><div class="kpi-value">¥68</div><div class="kpi-sub">元/tCO₂</div></div>' +
-  '</div>' +
-  '<div class="card">' +
-    '<div class="card-title">碳交易记录 <span style="margin-left:auto;font-size:12px;color:var(--text-3);">三阶段功能 — 碳排放权交易</span></div>' +
-    '<table class="data-table">' +
-      '<thead><tr><th>交易编号</th><th>类型</th><th>数量(tCO₂)</th><th>价格(元/t)</th><th>金额</th><th>交易方</th><th>日期</th><th>状态</th></tr></thead>' +
-      '<tbody>' +
-        tr('CT-2024-0712-01', tag('green','卖出CCER'), '500', '68', '¥34,000', '华能集团', '2024-07-12', tag('green','已完成')) +
-        tr('CT-2024-0710-02', tag('blue','买入配额'), '1000', '65', '¥65,000', '大唐发电', '2024-07-10', tag('green','已完成')) +
-        tr('CT-2024-0705-01', tag('green','卖出CCER'), '800', '62', '¥49,600', '国家电投', '2024-07-05', tag('green','已完成')) +
-      '</tbody>' +
-    '</table>' +
-  '</div>';
-  return html;
-};
-
-// ---- 电力金融市场（三阶段） ----
-PAGES['market-finance'] = function() {
-  var html = '' +
-  '<div class="card">' +
-    '<div class="card-title">电力金融市场 <span style="margin-left:auto;font-size:12px;color:var(--text-3);">三阶段功能 — 电力衍生品交易</span></div>' +
-    '<div style="text-align:center;padding:40px 0;color:var(--text-3);">' +
-      '<div style="font-size:48px;margin-bottom:16px;">📊</div>' +
-      '<h3 style="margin:0 0 12px;font-size:18px;">电力金融市场模块</h3>' +
-      '<p style="font-size:14px;margin:0 0 24px;">三阶段规划功能，包含电力远期合约、期货、期权等金融衍生品交易能力</p>' +
-      '<div style="display:flex;justify-content:center;gap:16px;">' +
-        '<div style="text-align:center;padding:16px 24px;background:var(--bg-2);border-radius:8px;"><div style="font-size:24px;color:var(--primary);font-weight:600;">远期合约</div><div style="font-size:12px;color:var(--text-3);margin-top:4px;">规划中</div></div>' +
-        '<div style="text-align:center;padding:16px 24px;background:var(--bg-2);border-radius:8px;"><div style="font-size:24px;color:var(--primary);font-weight:600;">电力期货</div><div style="font-size:12px;color:var(--text-3);margin-top:4px;">规划中</div></div>' +
-        '<div style="text-align:center;padding:16px 24px;background:var(--bg-2);border-radius:8px;"><div style="font-size:24px;color:var(--primary);font-weight:600;">电力期权</div><div style="font-size:12px;color:var(--text-3);margin-top:4px;">规划中</div></div>' +
-      '</div>' +
-    '</div>' +
-  '</div>';
-  return html;
-};
-
-// ---- 多VPP联合调度（三阶段） ----
-PAGES['control-multi-vpp'] = function() {
-  var html = '' +
-  '<div class="card">' +
-    '<div class="card-title">多VPP联合调度 <span style="margin-left:auto;font-size:12px;color:var(--text-3);">三阶段功能 — 跨区联合优化调度</span></div>' +
-    '<div style="text-align:center;padding:40px 0;color:var(--text-3);">' +
-      '<div style="font-size:48px;margin-bottom:16px;">🔗</div>' +
-      '<h3 style="margin:0 0 12px;font-size:18px;">多VPP联合调度引擎</h3>' +
-      '<p style="font-size:14px;margin:0 0 24px;">三阶段规划功能，实现跨VPP资源优化配置、联合申报、协同响应</p>' +
-      '<div style="display:flex;justify-content:center;gap:16px;">' +
-        '<div style="text-align:center;padding:16px 24px;background:var(--bg-2);border-radius:8px;"><div style="font-size:20px;color:var(--primary);font-weight:600;">跨区优化</div><div style="font-size:12px;color:var(--text-3);margin-top:4px;">规划中</div></div>' +
-        '<div style="text-align:center;padding:16px 24px;background:var(--bg-2);border-radius:8px;"><div style="font-size:20px;color:var(--primary);font-weight:600;">联合申报</div><div style="font-size:12px;color:var(--text-3);margin-top:4px;">规划中</div></div>' +
-        '<div style="text-align:center;padding:16px 24px;background:var(--bg-2);border-radius:8px;"><div style="font-size:20px;color:var(--primary);font-weight:600;">协同响应</div><div style="font-size:12px;color:var(--text-3);margin-top:4px;">规划中</div></div>' +
-      '</div>' +
-    '</div>' +
-  '</div>';
-  return html;
-};
-
-// ---- AI决策中心（三阶段） ----
-PAGES['analysis-ai'] = function() {
-  var html = '' +
-  '<div class="card">' +
-    '<div class="card-title">AI决策中心 <span style="margin-left:auto;font-size:12px;color:var(--text-3);">三阶段功能 — AI智能决策辅助</span></div>' +
-    '<div style="text-align:center;padding:40px 0;color:var(--text-3);">' +
-      '<div style="font-size:48px;margin-bottom:16px;">🤖</div>' +
-      '<h3 style="margin:0 0 12px;font-size:18px;">AI智能决策中心</h3>' +
-      '<p style="font-size:14px;margin:0 0 24px;">三阶段规划功能，基于大模型的VPP智能决策辅助：自动策略优化、风险评估、收益预测</p>' +
-      '<div style="display:flex;justify-content:center;gap:16px;">' +
-        '<div style="text-align:center;padding:16px 24px;background:var(--bg-2);border-radius:8px;"><div style="font-size:20px;color:var(--primary);font-weight:600;">策略优化</div><div style="font-size:12px;color:var(--text-3);margin-top:4px;">规划中</div></div>' +
-        '<div style="text-align:center;padding:16px 24px;background:var(--bg-2);border-radius:8px;"><div style="font-size:20px;color:var(--primary);font-weight:600;">风险评估</div><div style="font-size:12px;color:var(--text-3);margin-top:4px;">规划中</div></div>' +
-        '<div style="text-align:center;padding:16px 24px;background:var(--bg-2);border-radius:8px;"><div style="font-size:20px;color:var(--primary);font-weight:600;">收益预测</div><div style="font-size:12px;color:var(--text-3);margin-top:4px;">规划中</div></div>' +
-      '</div>' +
-    '</div>' +
-  '</div>';
-  return html;
-};
-
-// ---- 开放平台（三阶段） ----
-PAGES['eco-open'] = function() {
-  var html = '' +
-  '<div class="card">' +
-    '<div class="card-title">开放平台 <span style="margin-left:auto;font-size:12px;color:var(--text-3);">三阶段功能 — 生态开放API平台</span></div>' +
-    '<div style="text-align:center;padding:40px 0;color:var(--text-3);">' +
-      '<div style="font-size:48px;margin-bottom:16px;">🌐</div>' +
-      '<h3 style="margin:0 0 12px;font-size:18px;">VPP生态开放平台</h3>' +
-      '<p style="font-size:14px;margin:0 0 24px;">三阶段规划功能，提供标准化API接口，支持第三方资源接入、数据共享、能力开放</p>' +
-    '</div>' +
-  '</div>';
-  return html;
-};
-
-// ---- 合作伙伴管理（三阶段） ----
-PAGES['eco-partner'] = function() {
-  var html = '' +
-  '<div class="card">' +
-    '<div class="card-title">合作伙伴管理 <span style="margin-left:auto;font-size:12px;color:var(--text-3);">三阶段功能 — 生态合作伙伴管理</span></div>' +
-    '<div style="text-align:center;padding:40px 0;color:var(--text-3);">' +
-      '<div style="font-size:48px;margin-bottom:16px;">🤝</div>' +
-      '<h3 style="margin:0 0 12px;font-size:18px;">合作伙伴管理</h3>' +
-      '<p style="font-size:14px;margin:0 0 24px;">三阶段规划功能，管理生态合作伙伴：设备商、集成商、售电公司、能源服务商</p>' +
-    '</div>' +
-  '</div>';
-  return html;
-};
-
-// ---- 阶段信息覆盖层 ----
-PAGES['phase-info'] = function() {
-  var html = '' +
-  '<div class="card">' +
-    '<div class="card-title">三阶段规划</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">' +
-      '<div style="padding:20px;border:2px solid var(--primary);border-radius:8px;background:var(--primary-light);">' +
-        '<h3 style="color:var(--primary);margin-bottom:12px;">一阶段（MVP）</h3>' +
-        '<p style="font-weight:600;margin-bottom:8px;">负荷型VPP + 辅助服务调峰</p>' +
-        '<ul style="font-size:13px;color:var(--text-2);line-height:2;list-style:none;">' +
-          '<li>✓ 资源接入注册</li>' +
-          '<li>✓ 基线建模</li>' +
-          '<li>✓ 辅助服务市场申报</li>' +
-          '<li>✓ 调度执行与指令下发</li>' +
-          '<li>✓ 需求侧响应</li>' +
-          '<li>✓ 结算考核</li>' +
-          '<li>✓ 运营监控与分析</li>' +
-        '</ul>' +
-      '</div>' +
-      '<div style="padding:20px;border:2px solid var(--border);border-radius:8px;">' +
-        '<h3 style="color:var(--text-2);margin-bottom:12px;">二阶段</h3>' +
-        '<p style="font-weight:600;margin-bottom:8px;">现货市场 + 储能 + 分布式光伏</p>' +
-        '<ul style="font-size:13px;color:var(--text-2);line-height:2;list-style:none;">' +
-          '<li>○ 现货市场交易</li>' +
-          '<li>○ 储能系统管理</li>' +
-          '<li>○ 分布式光伏接入</li>' +
-          '<li>○ AI负荷预测</li>' +
-          '<li>○ KPI深度分析</li>' +
-          '<li>○ IoT平台管理</li>' +
-          '<li>○ 扩展资源类型</li>' +
-        '</ul>' +
-      '</div>' +
-      '<div style="padding:20px;border:2px solid var(--border);border-radius:8px;">' +
-        '<h3 style="color:var(--text-2);margin-bottom:12px;">三阶段</h3>' +
-        '<p style="font-weight:600;margin-bottom:8px;">多VPP协同 + 碳交易 + 全场景</p>' +
-        '<ul style="font-size:13px;color:var(--text-2);line-height:2;list-style:none;">' +
-          '<li>○ 多VPP跨区协同</li>' +
-          '<li>○ 碳排放权交易</li>' +
-          '<li>○ 电力金融市场</li>' +
-          '<li>○ AI智能决策中心</li>' +
-          '<li>○ 生态开放平台</li>' +
-          '<li>○ 合作伙伴管理</li>' +
-          '<li>○ 全场景覆盖</li>' +
-        '</ul>' +
-      '</div>' +
-    '</div>' +
-  '</div>';
-  return html;
-};
 
 // ---- 资源接入注册表单 ----
 PAGES['resource-register-form'] = function() {
@@ -4954,17 +4637,17 @@ PAGES['resource-register-form'] = function() {
       '</div>' +
       '<div class="form-item">' +
         '<label class="form-label">资源类型 <span class="req">*</span></label>' +
-        '<select class="form-select"><option>请选择</option><option>工业负荷</option><option>商业负荷</option><option>充电桩</option><option>储能</option></select>' +
+        '<select class="form-select"><option>请选择</option><option>储能</option><option>充电站</option><option>光伏</option><option>楼宇空调</option><option>工业负荷</option></select>' +
       '</div>' +
     '</div>' +
     '<div class="form-row">' +
       '<div class="form-item">' +
         '<label class="form-label">所属企业 <span class="req">*</span></label>' +
-        '<select class="form-select"><option>请选择</option><option>湖南有色金属集团</option><option>长沙万达广场</option><option>湘潭新能源科技</option><option>嘉定新能源</option></select>' +
+        '<select class="form-select"><option>请选择</option><option>湖南有色金属集团</option><option>长沙万达广场</option><option>湘潭新能源科技</option><option>株洲交投集团</option></select>' +
       '</div>' +
       '<div class="form-item">' +
         '<label class="form-label">统一社会信用代码</label>' +
-        '<input class="form-input" type="text" placeholder="91310000XXXXXXXXXX">' +
+        '<input class="form-input" type="text" placeholder="91430000XXXXXXXXXX">' +
       '</div>' +
     '</div>' +
     '<div class="form-row">' +
@@ -5058,7 +4741,7 @@ PAGES['resource-register-detail'] = function() {
   var html = '' +
   '<div class="detail-header">' +
     '<div class="detail-back" onclick="goBack()">← 返回</div>' +
-    '<div class="detail-title">资源注册详情 - 金山充电站C</div>' +
+    '<div class="detail-title">资源注册详情 - 常德充电站C</div>' +
     tag('blue','物模型同步') +
   '</div>' +
   '<div class="card">' +
@@ -5074,9 +4757,9 @@ PAGES['resource-register-detail'] = function() {
   '<div class="card">' +
     '<div class="card-title">资源基本信息</div>' +
     '<div class="detail-info-grid">' +
-      '<div class="detail-info-item"><div class="detail-info-label">资源名称</div><div class="detail-info-value">金山充电站C</div></div>' +
-      '<div class="detail-info-item"><div class="detail-info-label">资源类型</div><div class="detail-info-value">' + tag('blue','充电桩') + '</div></div>' +
-      '<div class="detail-info-item"><div class="detail-info-label">所属企业</div><div class="detail-info-value">嘉定新能源</div></div>' +
+      '<div class="detail-info-item"><div class="detail-info-label">资源名称</div><div class="detail-info-value">常德充电站C</div></div>' +
+      '<div class="detail-info-item"><div class="detail-info-label">资源类型</div><div class="detail-info-value">' + tag('blue','充电站') + '</div></div>' +
+      '<div class="detail-info-item"><div class="detail-info-label">所属企业</div><div class="detail-info-value">株洲交投集团</div></div>' +
       '<div class="detail-info-item"><div class="detail-info-label">额定功率</div><div class="detail-info-value">360 kW</div></div>' +
       '<div class="detail-info-item"><div class="detail-info-label">可调容量</div><div class="detail-info-value">200 kW</div></div>' +
       '<div class="detail-info-item"><div class="detail-info-label">通信协议</div><div class="detail-info-value">OCPP 2.0</div></div>' +
@@ -5106,7 +4789,7 @@ PAGES['resource-register-detail'] = function() {
     '</div>' +
   '</div>' +
   '<div style="display:flex;gap:8px;">' +
-    '<button class="btn btn-primary" onclick="showActionModal(\'推进到下一阶段\',\'确认将金山充电站C从物模型同步推进到能力校核评估阶段？\')">推进到下一阶段</button>' +
+    '<button class="btn btn-primary" onclick="showActionModal(\'推进到下一阶段\',\'确认将常德充电站C从物模型同步推进到能力校核评估阶段？\')">推进到下一阶段</button>' +
     '<button class="btn" onclick="showActionModal(\'退回修改\',\'退回资源注册申请，需填写退回原因。\')">退回修改</button>' +
     '<button class="btn" onclick="goBack()">返回列表</button>' +
   '</div>';
@@ -5311,7 +4994,7 @@ PAGES['baseline-manual-calc'] = function() {
     '<div class="form-row">' +
       '<div class="form-item">' +
         '<label class="form-label">资源名称 <span class="req">*</span></label>' +
-        '<select class="form-select"><option>请选择</option><option>虹桥储能电站</option><option>虹桥充电站A</option><option>虹桥商务区空调</option><option>浦东储能1号</option><option>嘉定充电站群</option><option>青浦工业负荷</option></select>' +
+        '<select class="form-select"><option>请选择</option><option>长沙储能1号站</option><option>湘潭充电站A</option><option>长沙楼宇空调群</option><option>湘潭储能2号站</option><option>株洲充电站群</option><option>衡阳工业负荷</option></select>' +
       '</div>' +
       '<div class="form-item">' +
         '<label class="form-label">事件编号 <span class="req">*</span></label>' +
@@ -5382,7 +5065,7 @@ PAGES['control-strategy-create'] = function() {
     '<div class="form-row">' +
       '<div class="form-item">' +
         '<label class="form-label">资源类型 <span class="req">*</span></label>' +
-        '<select class="form-select"><option>请选择</option><option>全部类型</option><option>储能</option><option>充电桩</option><option>工业负荷</option><option>商业负荷/空调</option></select>' +
+        '<select class="form-select"><option>请选择</option><option>全部类型</option><option>储能</option><option>充电站</option><option>光伏</option><option>楼宇空调</option><option>工业负荷</option></select>' +
       '</div>' +
       '<div class="form-item">' +
         '<label class="form-label">优化目标 <span class="req">*</span></label>' +
@@ -5486,9 +5169,9 @@ PAGES['demand-response-create'] = function() {
     '<table class="data-table">' +
       '<thead><tr><th><input type="checkbox"></th><th>资源名称</th><th>类型</th><th>可调上限</th><th>当前功率</th><th>预计响应量</th></tr></thead>' +
       '<tbody>' +
-        tr('金山充电站C', tag('blue','充电桩'), '200 kW', '180 kW', '20 kW') +
+        tr('常德充电站C', tag('blue','充电站'), '200 kW', '180 kW', '20 kW') +
         tr('湖南有色冶炼厂', tag('orange','工业负荷'), '800 kW', '720 kW', '80 kW') +
-        tr('长沙商业综合体A', tag('purple','商业负荷'), '500 kW', '420 kW', '80 kW') +
+        tr('长沙商业综合体A', tag('purple','楼宇空调'), '500 kW', '420 kW', '80 kW') +
         tr('湘潭光伏储能站', tag('green','储能'), '500 kW', '350 kW', '150 kW') +
         tr('株洲工业空调群', tag('orange','工业负荷'), '300 kW', '280 kW', '20 kW') +
       '</tbody>' +
@@ -5559,9 +5242,9 @@ PAGES['demand-response-detail'] = function() {
     '<table class="data-table">' +
       '<thead><tr><th>资源名称</th><th>类型</th><th>计划响应</th><th>实际响应</th><th>达成率</th><th>偏差</th></tr></thead>' +
       '<tbody>' +
-        tr('金山充电站C', tag('blue','充电桩'), '1.5 MW', '1.48 MW', tag('green','98.7%'), '0.02 MW') +
+        tr('常德充电站C', tag('blue','充电站'), '1.5 MW', '1.48 MW', tag('green','98.7%'), '0.02 MW') +
         tr('湖南有色冶炼厂', tag('orange','工业负荷'), '5.0 MW', '4.95 MW', tag('green','99.0%'), '0.05 MW') +
-        tr('长沙商业综合体A', tag('purple','商业负荷'), '3.0 MW', '2.92 MW', tag('green','97.3%'), '0.08 MW') +
+        tr('长沙商业综合体A', tag('purple','楼宇空调'), '3.0 MW', '2.92 MW', tag('green','97.3%'), '0.08 MW') +
         tr('湘潭光伏储能站', tag('green','储能'), '4.0 MW', '3.95 MW', tag('green','98.8%'), '0.05 MW') +
         tr('株洲工业空调群', tag('orange','工业负荷'), '1.5 MW', '1.50 MW', tag('green','100%'), '0 MW') +
       '</tbody>' +
